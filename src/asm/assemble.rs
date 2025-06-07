@@ -14,6 +14,22 @@
  * limitations under the License.
  */
 
-pub fn assemble(assembly: &String) -> Vec<u8> {
-    vec![]
+use keystone_engine::{Arch, Keystone, Mode, OptionType, OptionValue};
+
+pub fn assemble(assembly: &str) -> Result<Vec<u8>, u8> {
+    let engine = Keystone::new(Arch::X86, Mode::MODE_32);
+
+    match engine {
+        Ok(en) => {
+            en.option(OptionType::SYNTAX, OptionValue::SYNTAX_NASM);
+
+            let result = en.asm(assembly.to_string(), 0);
+
+            match result {
+                Ok(r) => return Ok(r.bytes),
+                Err(_) => return Err(3),
+            }
+        }
+        Err(_) => return Err(2),
+    }
 }
