@@ -67,6 +67,20 @@ const GENERAL_PURPOSE_REGISTERS_64_BIT: &[Register] = &[
         low: "SIL",
         arch: 64,
     },
+    Register {
+        full: "RDI",
+        extended: "EDI",
+        high: "DX",
+        low: "DIL",
+        arch: 64,
+    },
+    Register {
+        full: "R8",
+        extended: "R8D",
+        high: "R8W",
+        low: "R8B",
+        arch: 64,
+    },
 ];
 
 impl Encoder {

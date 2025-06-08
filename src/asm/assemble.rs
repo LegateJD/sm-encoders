@@ -17,11 +17,11 @@
 use keystone_engine::{Arch, Keystone, Mode, OptionType, OptionValue};
 
 pub fn assemble(assembly: &str) -> Result<Vec<u8>, u8> {
-    let engine = Keystone::new(Arch::X86, Mode::MODE_32);
+    let engine = Keystone::new(Arch::X86, Mode::MODE_64);
 
     match engine {
         Ok(en) => {
-            en.option(OptionType::SYNTAX, OptionValue::SYNTAX_NASM);
+            en.option(OptionType::SYNTAX, OptionValue::SYNTAX_INTEL);
 
             let result = en.asm(assembly.to_string(), 0);
 
