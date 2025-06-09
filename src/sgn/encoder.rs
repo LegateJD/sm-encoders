@@ -88,12 +88,12 @@ impl Encoder {
         Encoder { seed }
     }
 
-    pub fn encode(&self, mut payload: Vec<u8>) -> Vec<u8> {
+    pub fn encode(&self, mut payload: Vec<u8>) -> Result<Vec<u8>, String> {
         additive_feedback_loop(&mut payload, self.seed);
         let mut full_binary = self.get_decoder_stub(&payload).unwrap();
         full_binary.append(&mut payload);
 
-        full_binary
+        Ok(full_binary)
     }
 
     fn get_decoder_assembly(&self, payload_size: usize) -> String {

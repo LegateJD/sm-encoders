@@ -17,19 +17,13 @@
 use keystone_engine::{Arch, Keystone, Mode, OptionType, OptionValue};
 
 pub fn assemble(assembly: &str) -> Result<Vec<u8>, u8> {
-    let engine = Keystone::new(Arch::X86, Mode::MODE_64);
+    let engine = Keystone::new(Arch::X86, Mode::MODE_64).map_err(|_| 2)?;
 
-    match engine {
-        Ok(en) => {
-            en.option(OptionType::SYNTAX, OptionValue::SYNTAX_INTEL);
+    engine
+        .option(OptionType::SYNTAX, OptionValue::SYNTAX_INTEL)
+        .map_err(|_| 4)?;
 
-            let result = en.asm(assembly.to_string(), 0);
+    let result = engine.asm(assembly.to_string(), 0).map_err(|_| 3)?;
 
-            match result {
-                Ok(r) => return Ok(r.bytes),
-                Err(_) => return Err(3),
-            }
-        }
-        Err(_) => return Err(2),
-    }
+    Ok(result.bytes)
 }
