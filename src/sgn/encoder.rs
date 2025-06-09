@@ -22,7 +22,7 @@ pub struct Encoder {
     seed: u8,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 struct Register {
     full: &'static str,
     extended: &'static str,
@@ -67,6 +67,20 @@ const GENERAL_PURPOSE_REGISTERS_64_BIT: &[Register] = &[
         low: "SIL",
         arch: 64,
     },
+    Register {
+        full: "RDI",
+        extended: "EDI",
+        high: "DX",
+        low: "DIL",
+        arch: 64,
+    },
+    Register {
+        full: "R8",
+        extended: "R8D",
+        high: "R8W",
+        low: "R8B",
+        arch: 64,
+    },
 ];
 
 impl Encoder {
@@ -74,12 +88,12 @@ impl Encoder {
         Encoder { seed }
     }
 
-    pub fn encode(&self, mut payload: Vec<u8>) -> Vec<u8> {
+    pub fn encode(&self, mut payload: Vec<u8>) -> Result<Vec<u8>, String> {
         additive_feedback_loop(&mut payload, self.seed);
-        let mut full_binary = self.get_decoder_stub(&payload);
+        let mut full_binary = self.get_decoder_stub(&payload).unwrap();
         full_binary.append(&mut payload);
 
-        full_binary
+        Ok(full_binary)
     }
 
     fn get_decoder_assembly(&self, payload_size: usize) -> String {
@@ -93,8 +107,8 @@ decode:
 data:"
             .into();
 
-        let reg1 = get_random_general_purpose_register();
-        let reg2 = get_random_general_purpose_register();
+        let reg1 = get_random_general_purpose_register(&["ECX"]);
+        let reg2 = get_random_general_purpose_register(&["CL", reg1.full]);
 
         decoder_template
             .replace("{R}", &reg1.full)
@@ -103,7 +117,7 @@ data:"
             .replace("{S}", &payload_size.to_string())
     }
 
-    fn get_decoder_stub(&self, payload: &[u8]) -> Vec<u8> {
+    fn get_decoder_stub(&self, payload: &[u8]) -> Result<Vec<u8>, u8> {
         let assembly = self.get_decoder_assembly(payload.len());
         assemble(&assembly)
     }
@@ -117,11 +131,22 @@ fn additive_feedback_loop(payload: &mut Vec<u8>, mut seed: u8) {
     }
 }
 
-fn get_random_general_purpose_register() -> Register {
+fn get_random_general_purpose_register(excludes: &[&str]) -> Register {
     let mut rng = rand::rng();
+    let mut filtered = vec![];
+    for reg in GENERAL_PURPOSE_REGISTERS_64_BIT.iter() {
+        if !excludes.contains(&reg.extended)
+            && !excludes.contains(&reg.full)
+            && !excludes.contains(&reg.high)
+            && !excludes.contains(&reg.low)
+        {
+            filtered.push(reg);
+        }
+    }
 
-    GENERAL_PURPOSE_REGISTERS_64_BIT
+    let r = filtered
         .choose(&mut rng)
-        .expect("Should always be able to choose a register from a non-empty slice")
-        .clone()
+        .expect("Should always be able to choose a register from a non-empty slice");
+
+    (**r).clone()
 }
