@@ -16,14 +16,20 @@
 
 use keystone_engine::{Arch, Keystone, Mode, OptionType, OptionValue};
 
-pub fn assemble(assembly: &str) -> Result<Vec<u8>, u8> {
-    let engine = Keystone::new(Arch::X86, Mode::MODE_64).map_err(|_| 2)?;
+#[derive(Debug)]
+pub enum AssemblerError {
+    Configuration,
+    SyntaxError
+}
+
+pub fn assemble(assembly: &str) -> Result<Vec<u8>, AssemblerError> {
+    let engine = Keystone::new(Arch::X86, Mode::MODE_64).map_err(|_| AssemblerError::Configuration)?;
 
     engine
         .option(OptionType::SYNTAX, OptionValue::SYNTAX_INTEL)
-        .map_err(|_| 4)?;
+        .map_err(|_| AssemblerError::Configuration)?;
 
-    let result = engine.asm(assembly.to_string(), 0).map_err(|_| 3)?;
+    let result = engine.asm(assembly.to_string(), 0).map_err(|_| AssemblerError::SyntaxError)?;
 
     Ok(result.bytes)
 }

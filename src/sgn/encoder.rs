@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-use crate::asm::assemble::assemble;
-use rand::{seq::IndexedRandom, Rng};
+use crate::asm::assemble::{assemble, AssemblerError};
+use rand::{seq::IndexedRandom};
 
 #[derive(Debug)]
 pub struct Encoder {
@@ -23,12 +23,12 @@ pub struct Encoder {
 }
 
 #[derive(Debug, Clone, Copy)]
-struct Register {
-    full: &'static str,
-    extended: &'static str,
-    high: &'static str,
-    low: &'static str,
-    arch: u8,
+pub struct Register {
+    pub full: &'static str,
+    pub extended: &'static str,
+    pub high: &'static str,
+    pub low: &'static str,
+    pub arch: u8,
 }
 
 const GENERAL_PURPOSE_REGISTERS_64_BIT: &[Register] = &[
@@ -83,14 +83,19 @@ const GENERAL_PURPOSE_REGISTERS_64_BIT: &[Register] = &[
     },
 ];
 
+#[derive(Debug)]
+pub enum EncodingError {
+    AssemblerError
+}
+
 impl Encoder {
     pub fn new(seed: u8) -> Self {
         Encoder { seed }
     }
 
-    pub fn encode(&self, mut payload: Vec<u8>) -> Result<Vec<u8>, String> {
+    pub fn encode(&self, mut payload: Vec<u8>) -> Result<Vec<u8>, EncodingError> {
         additive_feedback_loop(&mut payload, self.seed);
-        let mut full_binary = self.get_decoder_stub(&payload).unwrap();
+        let mut full_binary = self.get_decoder_stub(&payload).map_err(|_| EncodingError::AssemblerError)?;
         full_binary.append(&mut payload);
 
         Ok(full_binary)
@@ -107,17 +112,17 @@ decode:
 data:"
             .into();
 
-        let reg1 = get_random_general_purpose_register(&["ECX"]);
-        let reg2 = get_random_general_purpose_register(&["CL", reg1.full]);
+        let register1 = get_save_random_general_purpose_register(&["ECX"]);
+        let register2 = get_save_random_general_purpose_register(&["CL", register1.full]);
 
         decoder_template
-            .replace("{R}", &reg1.full)
-            .replace("{RL}", &reg2.low)
+            .replace("{R}", &register1.full)
+            .replace("{RL}", &register2.low)
             .replace("{K}", &self.seed.to_string())
             .replace("{S}", &payload_size.to_string())
     }
 
-    fn get_decoder_stub(&self, payload: &[u8]) -> Result<Vec<u8>, u8> {
+    fn get_decoder_stub(&self, payload: &[u8]) -> Result<Vec<u8>, AssemblerError> {
         let assembly = self.get_decoder_assembly(payload.len());
         assemble(&assembly)
     }
@@ -131,9 +136,10 @@ fn additive_feedback_loop(payload: &mut Vec<u8>, mut seed: u8) {
     }
 }
 
-fn get_random_general_purpose_register(excludes: &[&str]) -> Register {
+pub fn get_save_random_general_purpose_register(excludes: &[&str]) -> Register {
     let mut rng = rand::rng();
     let mut filtered = vec![];
+
     for reg in GENERAL_PURPOSE_REGISTERS_64_BIT.iter() {
         if !excludes.contains(&reg.extended)
             && !excludes.contains(&reg.full)
@@ -144,9 +150,18 @@ fn get_random_general_purpose_register(excludes: &[&str]) -> Register {
         }
     }
 
-    let r = filtered
+    let register = filtered
         .choose(&mut rng)
-        .expect("Should always be able to choose a register from a non-empty slice");
+        .unwrap();
 
-    (**r).clone()
+    (**register).clone()
+}
+
+pub fn get_random_general_purpose_register() -> Register {
+    let mut rng = rand::rng();
+    let register = GENERAL_PURPOSE_REGISTERS_64_BIT
+        .choose(&mut rng)
+        .unwrap();
+
+    (*register).clone()
 }
