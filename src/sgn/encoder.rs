@@ -14,89 +14,54 @@
  * limitations under the License.
  */
 
-use crate::asm::assemble::assemble;
-use rand::{seq::IndexedRandom, Rng};
+use crate::{
+    asm::assembler::assemble,
+    sgn::{
+        obfuscate::generate_garbage_instructions,
+        x64_architecture::{Register, GENERAL_PURPOSE_REGISTERS_64_BIT},
+    },
+};
+use keystone_engine::KeystoneError;
+use rand::seq::IndexedRandom;
+use thiserror::Error;
 
 #[derive(Debug)]
-pub struct Encoder {
+pub struct SgnEncoder {
     seed: u8,
+    plain_decoder: bool,
 }
 
-#[derive(Debug, Clone, Copy)]
-struct Register {
-    full: &'static str,
-    extended: &'static str,
-    high: &'static str,
-    low: &'static str,
-    arch: u8,
+#[derive(Error, Debug)]
+pub enum SgnError {
+    #[error("Assembler Engine failed.")]
+    AssemblerError(#[from] KeystoneError),
 }
 
-const GENERAL_PURPOSE_REGISTERS_64_BIT: &[Register] = &[
-    Register {
-        full: "RAX",
-        extended: "EAX",
-        high: "AX",
-        low: "AL",
-        arch: 64,
-    },
-    Register {
-        full: "RBX",
-        extended: "EBX",
-        high: "BX",
-        low: "BL",
-        arch: 64,
-    },
-    Register {
-        full: "RCX",
-        extended: "ECX",
-        high: "CX",
-        low: "CL",
-        arch: 64,
-    },
-    Register {
-        full: "RDX",
-        extended: "EDX",
-        high: "DX",
-        low: "DL",
-        arch: 64,
-    },
-    Register {
-        full: "RSI",
-        extended: "ESI",
-        high: "SI",
-        low: "SIL",
-        arch: 64,
-    },
-    Register {
-        full: "RDI",
-        extended: "EDI",
-        high: "DX",
-        low: "DIL",
-        arch: 64,
-    },
-    Register {
-        full: "R8",
-        extended: "R8D",
-        high: "R8W",
-        low: "R8B",
-        arch: 64,
-    },
-];
-
-impl Encoder {
-    pub fn new(seed: u8) -> Self {
-        Encoder { seed }
+impl SgnEncoder {
+    pub fn new(seed: u8, plain_decoder: bool) -> Self {
+        SgnEncoder {
+            seed,
+            plain_decoder,
+        }
     }
 
-    pub fn encode(&self, mut payload: Vec<u8>) -> Result<Vec<u8>, String> {
+    pub fn encode(&self, mut payload: Vec<u8>) -> Result<Vec<u8>, SgnError> {
         additive_feedback_loop(&mut payload, self.seed);
-        let mut full_binary = self.get_decoder_stub(&payload).unwrap();
+        let mut full_binary = self.generate_decoder_stub(&payload)?;
         full_binary.append(&mut payload);
 
-        Ok(full_binary)
+        if self.plain_decoder {
+            return Ok(full_binary);
+        }
+
+        let mut garbage = generate_garbage_instructions()?;
+
+        garbage.extend(full_binary.into_iter());
+
+        Ok(garbage)
     }
 
-    fn get_decoder_assembly(&self, payload_size: usize) -> String {
+    fn generate_decoder_assembly(&self, payload_size: usize) -> String {
         let decoder_template: String = "MOV {RL},{K}
 	MOV RCX,{S}
 	LEA {R},[RIP+data-1]
@@ -107,18 +72,18 @@ decode:
 data:"
             .into();
 
-        let reg1 = get_random_general_purpose_register(&["ECX"]);
-        let reg2 = get_random_general_purpose_register(&["CL", reg1.full]);
+        let register1 = get_save_random_general_purpose_register(&["ECX"]);
+        let register2 = get_save_random_general_purpose_register(&["CL", register1.full]);
 
         decoder_template
-            .replace("{R}", &reg1.full)
-            .replace("{RL}", &reg2.low)
+            .replace("{R}", &register1.full)
+            .replace("{RL}", &register2.low)
             .replace("{K}", &self.seed.to_string())
             .replace("{S}", &payload_size.to_string())
     }
 
-    fn get_decoder_stub(&self, payload: &[u8]) -> Result<Vec<u8>, u8> {
-        let assembly = self.get_decoder_assembly(payload.len());
+    fn generate_decoder_stub(&self, payload: &[u8]) -> Result<Vec<u8>, SgnError> {
+        let assembly = self.generate_decoder_assembly(payload.len());
         assemble(&assembly)
     }
 }
@@ -131,9 +96,10 @@ fn additive_feedback_loop(payload: &mut Vec<u8>, mut seed: u8) {
     }
 }
 
-fn get_random_general_purpose_register(excludes: &[&str]) -> Register {
+pub fn get_save_random_general_purpose_register(excludes: &[&str]) -> &'static Register {
     let mut rng = rand::rng();
     let mut filtered = vec![];
+
     for reg in GENERAL_PURPOSE_REGISTERS_64_BIT.iter() {
         if !excludes.contains(&reg.extended)
             && !excludes.contains(&reg.full)
@@ -144,9 +110,14 @@ fn get_random_general_purpose_register(excludes: &[&str]) -> Register {
         }
     }
 
-    let r = filtered
-        .choose(&mut rng)
-        .expect("Should always be able to choose a register from a non-empty slice");
+    let register = filtered.choose(&mut rng).unwrap();
 
-    (**r).clone()
+    *register
+}
+
+pub fn get_random_general_purpose_register() -> &'static Register {
+    let mut rng = rand::rng();
+    let register = GENERAL_PURPOSE_REGISTERS_64_BIT.choose(&mut rng).unwrap();
+
+    register
 }

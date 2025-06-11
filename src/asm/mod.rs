@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-pub mod assemble;
+pub mod assembler;

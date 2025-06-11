@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-use keystone_engine::{Arch, Keystone, Mode, OptionType, OptionValue};
+use rand::{seq::IndexedRandom, Rng};
 
-pub fn assemble(assembly: &str) -> Result<Vec<u8>, u8> {
-    let engine = Keystone::new(Arch::X86, Mode::MODE_64).map_err(|_| 2)?;
+pub fn coin_flip() -> bool {
+    let mut rng = rand::rng();
+    rng.random()
+}
 
-    engine
-        .option(OptionType::SYNTAX, OptionValue::SYNTAX_INTEL)
-        .map_err(|_| 4)?;
+pub fn random_label(length: usize) -> String {
+    const CUSTOM_CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    let mut rng = rand::rng();
 
-    let result = engine.asm(assembly.to_string(), 0).map_err(|_| 3)?;
-
-    Ok(result.bytes)
+    CUSTOM_CHARSET
+        .choose_multiple(&mut rng, length)
+        .map(|&b| b as char)
+        .collect()
 }

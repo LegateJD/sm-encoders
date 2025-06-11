@@ -22,7 +22,7 @@ use std::{
 use clap::{arg, Parser};
 use rand::Rng;
 
-use crate::sgn::encoder::Encoder;
+use crate::sgn::encoder::SgnEncoder;
 
 pub mod asm;
 pub mod sgn;
@@ -37,27 +37,32 @@ struct Args {
     /// Encoded output binary name
     #[arg(short, long)]
     output: String,
+
+    /// Do not encode the decoder stub
+    #[arg(short, long)]
+    plain_encoder: bool,
 }
 
 fn main() {
-    let args = Args::parse();
-    let mut buf = vec![];
-    let seed: u8 = rand::rng().random();
-    let encoder = Encoder::new(seed);
-
-    let result = File::open(&args.input)
-        .map_err(|x| x.to_string())
-        .and_then(|mut f| f.read_to_end(&mut buf).map_err(|e| e.to_string()))
-        .and_then(|read_bytes| encoder.encode(buf))
-        .and_then(|encoded| {
-            File::create(&args.output)
-                .map_err(|x| x.to_string())
-                .map(|x| (x, encoded))
-        })
-        .and_then(|(mut f, enc)| f.write_all(&enc).map_err(|x| x.to_string()));
-
-    match result {
+    match encode() {
         Ok(_) => println!("Written payload succesfully"),
         Err(error) => println!("{}", error),
     }
+}
+
+fn encode() -> Result<(), String> {
+    let args = Args::parse();
+    let mut buf = vec![];
+    let seed: u8 = rand::rng().random();
+    let encoder = SgnEncoder::new(seed, args.plain_encoder);
+
+    let mut input_file = File::open(&args.input).map_err(|x| x.to_string())?;
+    input_file
+        .read_to_end(&mut buf)
+        .map_err(|e| e.to_string())?;
+    let encoded = encoder.encode(buf).map_err(|x| x.to_string())?;
+    let mut output_file = File::create(&args.output).map_err(|x| x.to_string())?;
+    output_file.write_all(&encoded).map_err(|x| x.to_string())?;
+
+    Ok(())
 }

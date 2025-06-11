@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
-pub mod encoder;
-pub mod instructions;
-pub mod obfuscate;
-pub mod utils;
-pub mod x64_architecture;
+use crate::sgn::encoder::SgnError;
+use keystone_engine::{Arch, Keystone, Mode, OptionType, OptionValue};
+
+pub fn assemble(assembly: &str) -> Result<Vec<u8>, SgnError> {
+    let engine = Keystone::new(Arch::X86, Mode::MODE_64)?;
+    engine.option(OptionType::SYNTAX, OptionValue::SYNTAX_INTEL)?;
+    let result = engine.asm(assembly.to_string(), 0)?;
+
+    Ok(result.bytes)
+}
