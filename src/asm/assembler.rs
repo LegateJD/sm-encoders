@@ -14,22 +14,13 @@
  * limitations under the License.
  */
 
+use crate::sgn::encoder::SgnError;
 use keystone_engine::{Arch, Keystone, Mode, OptionType, OptionValue};
 
-#[derive(Debug)]
-pub enum AssemblerError {
-    Configuration,
-    SyntaxError
-}
-
-pub fn assemble(assembly: &str) -> Result<Vec<u8>, AssemblerError> {
-    let engine = Keystone::new(Arch::X86, Mode::MODE_64).map_err(|_| AssemblerError::Configuration)?;
-
-    engine
-        .option(OptionType::SYNTAX, OptionValue::SYNTAX_INTEL)
-        .map_err(|_| AssemblerError::Configuration)?;
-
-    let result = engine.asm(assembly.to_string(), 0).map_err(|_| AssemblerError::SyntaxError)?;
+pub fn assemble(assembly: &str) -> Result<Vec<u8>, SgnError> {
+    let engine = Keystone::new(Arch::X86, Mode::MODE_64)?;
+    engine.option(OptionType::SYNTAX, OptionValue::SYNTAX_INTEL)?;
+    let result = engine.asm(assembly.to_string(), 0)?;
 
     Ok(result.bytes)
 }
