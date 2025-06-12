@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+pub const OPERANDS: &[&'static str] = &["XOR", "SUB", "ADD", "ROL", "ROR", "NOT"];
+
 pub const CONDITIONAL_JUMP_MNEMONICS: &[&'static str] = &[
     "JAE", "JA", "JBE", "JB", "JC", "JE", "JGE", "JG", "JLE", "JL", "JNAE", "JNA", "JNBE", "JNB",
     "JNC", "JNE", "JNGE", "JNG", "JNLE", "JNL", "JNO", "JNP", "JNS", "JNZ", "JO", "JPE", "JPO",
