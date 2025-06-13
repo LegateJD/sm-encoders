@@ -14,6 +14,50 @@
  * limitations under the License.
  */
 
+use std::fmt;
+
+use rand::{
+    distr::{Distribution, StandardUniform},
+    Rng,
+};
+
+#[derive(Debug, Clone, Copy)]
+pub enum SchemaInstruction {
+    XOR,
+    SUB,
+    ADD,
+    ROL,
+    ROR,
+    NOT
+}
+
+impl fmt::Display for SchemaInstruction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            SchemaInstruction::XOR => write!(f, "XOR"),
+            SchemaInstruction::SUB => write!(f, "SUB"),
+            SchemaInstruction::ADD => write!(f, "ADD"),
+            SchemaInstruction::ROL => write!(f, "ROL"),
+            SchemaInstruction::ROR => write!(f, "ROR"),
+            SchemaInstruction::NOT => write!(f, "NOT"),
+        }
+    }
+}
+
+impl Distribution<SchemaInstruction> for StandardUniform {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> SchemaInstruction {
+        let index: u8 = rng.random_range(0..=5);
+        match index {
+            0 => SchemaInstruction::XOR,
+            1 => SchemaInstruction::SUB,
+            2 => SchemaInstruction::ADD,
+            3 => SchemaInstruction::ROL,
+            4 => SchemaInstruction::ROR,
+            _ => SchemaInstruction::NOT,
+        }
+    }
+}
+
 pub const CONDITIONAL_JUMP_MNEMONICS: &[&'static str] = &[
     "JAE", "JA", "JBE", "JB", "JC", "JE", "JGE", "JG", "JLE", "JL", "JNAE", "JNA", "JNBE", "JNB",
     "JNC", "JNE", "JNGE", "JNG", "JNLE", "JNL", "JNO", "JNP", "JNS", "JNZ", "JO", "JPE", "JPO",

@@ -60,7 +60,7 @@ fn encode() -> Result<(), String> {
     input_file
         .read_to_end(&mut buf)
         .map_err(|e| e.to_string())?;
-    let encoded = encoder.encode(buf).map_err(|x| x.to_string())?;
+    let encoded = encoder.encode(&buf).map_err(|x| x.to_string())?;
     let mut output_file = File::create(&args.output).map_err(|x| x.to_string())?;
     output_file.write_all(&encoded).map_err(|x| x.to_string())?;
 
