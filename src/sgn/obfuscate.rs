@@ -51,7 +51,7 @@ fn generate_garbage_assembly() -> String {
     let garbage_assembly = get_random_safe_assembly();
     let register = get_random_general_purpose_register();
     let mut rng = rand::rng();
-    let random_byte = format!("0x{:#04x}", rng.random::<u8>());
+    let random_byte = format!("0x{:x}", rng.random::<u8>());
     garbage_assembly
         .replace("{R}", &register.full)
         .replace("{K}", &random_byte)
@@ -86,7 +86,7 @@ fn generate_garbage_jump() -> Result<Vec<u8>, SgnError> {
 }
 
 fn add_jmp_over(payload: Vec<u8>) -> Result<Vec<u8>, SgnError> {
-    let jmp_assembly = format!("jmp 0x{:#04x}", payload.len() + 2);
+    let jmp_assembly = format!("jmp 0x{:x}", payload.len() + 2);
     let mut final_bin = assemble(&jmp_assembly)?;
     final_bin.extend(payload.into_iter());
 

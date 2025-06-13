@@ -17,7 +17,7 @@
 use crate::{
     asm::assembler::assemble,
     sgn::{
-        instructions::OPERANDS,
+        instructions::{SchemaInstruction},
         obfuscate::generate_garbage_instructions,
         x64_architecture::{Register, GENERAL_PURPOSE_REGISTERS_64_BIT},
     },
@@ -34,7 +34,7 @@ pub struct SgnEncoder {
 }
 
 struct Operation {
-    operand: &'static str,
+    instruction: SchemaInstruction,
     key: Option<[u8; 4]>,
 }
 
@@ -52,10 +52,11 @@ impl SgnEncoder {
         }
     }
 
-    pub fn encode(&self, mut payload: Vec<u8>) -> Result<Vec<u8>, SgnError> {
-        additive_feedback_loop(&mut payload, self.seed);
+    pub fn encode(&self, payload: &Vec<u8>) -> Result<Vec<u8>, SgnError> {
+        let mut data = payload.clone();
+        additive_feedback_loop(&mut data, self.seed);
         let mut full_binary = self.generate_decoder_stub(&payload)?;
-        full_binary.append(&mut payload);
+        full_binary.extend(data.iter());
 
         if self.plain_decoder {
             return Ok(full_binary);
@@ -63,10 +64,11 @@ impl SgnEncoder {
 
         let mut garbage = generate_garbage_instructions()?;
         garbage.extend(full_binary.iter());
+
         let schema_size = (garbage.len() - full_binary.len()) / 8 + 1;
         full_binary = garbage;
-        let random_schema = new_cipher_schema(schema_size);
 
+        let random_schema = new_cipher_schema(schema_size);
         full_binary = schema_cipher(full_binary, &random_schema);
         full_binary = add_schema_decoder(full_binary, &random_schema)?;
 
@@ -84,12 +86,12 @@ decode:
 data:"
             .into();
 
-        let register1 = get_save_random_general_purpose_register(&["ECX"]);
-        let register2 = get_save_random_general_purpose_register(&["CL", register1.full]);
+        let indexer_register = get_save_random_general_purpose_register(&["ECX"]);
+        let seed_register = get_save_random_general_purpose_register(&["CL", indexer_register.full]);
 
         decoder_template
-            .replace("{R}", &register1.full)
-            .replace("{RL}", &register2.low)
+            .replace("{R}", &indexer_register.full)
+            .replace("{RL}", &seed_register.low)
             .replace("{K}", &self.seed.to_string())
             .replace("{S}", &payload_size.to_string())
     }
@@ -139,15 +141,15 @@ fn new_cipher_schema(size: usize) -> Vec<Operation> {
     let mut rng = rand::rng();
 
     for _ in 0..size {
-        let operand = random_operand();
+        let instruction: SchemaInstruction = rng.random();
 
-        let key = match operand {
-            "NOT" => None,
-            "ROL" | "ROR" => Some([0u8, 0u8, 0u8, rng.random()]),
+        let key = match instruction {
+            SchemaInstruction::NOT => None,
+            SchemaInstruction::ROL | SchemaInstruction::ROR => Some([0u8, 0u8, 0u8, rng.random()]),
             _ => Some([rng.random(), rng.random(), rng.random(), rng.random()]),
         };
 
-        let operation = Operation { operand, key };
+        let operation = Operation { instruction, key };
         schema.push(operation);
     }
 
@@ -175,15 +177,15 @@ fn add_schema_decoder(mut payload: Vec<u8>, schema: &Vec<Operation>) -> Result<V
 
         let step_assembly = match operation.key {
             Some(k) => format!(
-                "\t{} DWORD PTR [{}+0x{:#04x}],0x{:#04x};\n",
-                operation.operand,
+                "\t{} DWORD PTR [{}+0x{:x}],0x{:x};\n",
+                operation.instruction,
                 reg.full,
                 index,
                 BigEndian::read_u32(&k)
             ),
             None => format!(
-                "\t{} DWORD PTR [{}+0x{:#04x}];\n",
-                operation.operand, reg.full, index
+                "\t{} DWORD PTR [{}+0x{:x}];\n",
+                operation.instruction, reg.full, index
             ),
         };
 
@@ -201,54 +203,48 @@ fn add_schema_decoder(mut payload: Vec<u8>, schema: &Vec<Operation>) -> Result<V
 }
 
 fn add_call_over(payload: Vec<u8>) -> Result<Vec<u8>, SgnError> {
-    let call_assembly = format!("call 0x{:#04x}", payload.len() + 5);
+    let call_assembly = format!("call 0x{:x}", payload.len() + 5);
     let mut final_bin = assemble(&call_assembly)?;
     final_bin.extend(payload.into_iter());
 
     Ok(final_bin)
 }
 
-fn random_operand() -> &'static str {
-    let mut rng = rand::rng();
-    OPERANDS.choose(&mut rng).unwrap()
-}
-
 fn schema_cipher(mut payload: Vec<u8>, schema: &Vec<Operation>) -> Vec<u8> {
     let mut index = 0;
     for operation in schema {
-        match operation.operand {
-            "XOR" => {
+        match operation.instruction {
+            SchemaInstruction::XOR => {
                 let encoded = BigEndian::read_u32(&payload[index..index + 4])
                     ^ LittleEndian::read_u32(&operation.key.unwrap());
                 BigEndian::write_u32(&mut payload[index..index + 4], encoded)
             }
-            "ADD" => {
+            SchemaInstruction::ADD => {
                 let encoded = (LittleEndian::read_u32(&payload[index..index + 4])
                     - BigEndian::read_u32(&operation.key.unwrap()))
                     % 0xFFFFFFFF;
                 LittleEndian::write_u32(&mut payload[index..index + 4], encoded)
             }
-            "SUB" => {
+            SchemaInstruction::SUB => {
                 let encoded = (LittleEndian::read_u32(&payload[index..index + 4])
                     + BigEndian::read_u32(&operation.key.unwrap()))
                     % 0xFFFFFFFF;
                 LittleEndian::write_u32(&mut payload[index..index + 4], encoded)
             }
-            "ROL" => {
+            SchemaInstruction::ROL => {
                 let encoded = LittleEndian::read_u32(&payload[index..index + 4])
                     .rotate_right(BigEndian::read_u32(&operation.key.unwrap()));
                 LittleEndian::write_u32(&mut payload[index..index + 4], encoded)
             }
-            "ROR" => {
+            SchemaInstruction::ROR => {
                 let encoded = LittleEndian::read_u32(&payload[index..index + 4])
                     .rotate_left(BigEndian::read_u32(&operation.key.unwrap()));
                 LittleEndian::write_u32(&mut payload[index..index + 4], encoded)
             }
-            "NOT" => {
+            SchemaInstruction::NOT => {
                 let encoded = !BigEndian::read_u32(&payload[index..index + 4]);
                 BigEndian::write_u32(&mut payload[index..index + 4], encoded)
             }
-            _ => unreachable!(),
         }
 
         index += 4;
