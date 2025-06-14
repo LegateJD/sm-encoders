@@ -26,6 +26,8 @@ use crate::sgn::encoder::SgnEncoder;
 
 pub mod asm;
 pub mod sgn;
+pub mod core;
+pub mod xor_dynamic;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

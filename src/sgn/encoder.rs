@@ -52,8 +52,8 @@ impl SgnEncoder {
         }
     }
 
-    pub fn encode(&self, payload: &Vec<u8>) -> Result<Vec<u8>, SgnError> {
-        let mut data = payload.clone();
+    pub fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, SgnError> {
+        let mut data = payload.to_vec();
         additive_feedback_loop(&mut data, self.seed);
         let mut full_binary = self.generate_decoder_stub(&payload)?;
         full_binary.extend(data.iter());
@@ -102,7 +102,7 @@ data:"
     }
 }
 
-fn additive_feedback_loop(payload: &mut Vec<u8>, mut seed: u8) {
+fn additive_feedback_loop(payload: &mut [u8], mut seed: u8) {
     for byte in payload.iter_mut().rev() {
         let original = *byte;
         *byte ^= seed;
