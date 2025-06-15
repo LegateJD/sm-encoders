@@ -17,12 +17,17 @@
 use crate::{
     asm::assembler::assemble,
     sgn::{
-        instructions::{SchemaInstruction},
+        instructions::SchemaInstruction,
         obfuscate::generate_garbage_instructions,
-        x64_architecture::{Register, GENERAL_PURPOSE_REGISTERS_64_BIT},
+        x64_architecture::{AsmRegister, RCX_Full, Register, GENERAL_PURPOSE_REGISTERS_64_BIT},
     },
 };
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
+use dynasmrt::{dynasm, DynasmApi, DynasmLabelApi};
+use iced_x86::{
+    code_asm::{ah, al, asm_traits::CodeAsmMovsb, ax, byte_ptr, rcx, AsmRegister64, AsmRegister8, CodeAssembler},
+    Register,
+};
 use keystone_engine::KeystoneError;
 use rand::{seq::IndexedRandom, Rng};
 use thiserror::Error;
@@ -75,30 +80,39 @@ impl SgnEncoder {
         Ok(full_binary)
     }
 
-    fn generate_decoder_assembly(&self, payload_size: usize) -> String {
-        let decoder_template: String = "MOV {RL},{K}
-	MOV RCX,{S}
-	LEA {R},[RIP+data-1]
-decode:
-	XOR BYTE PTR [{R}+RCX],{RL}
-	ADD {RL},BYTE PTR [{R}+RCX]
-	LOOP decode
-data:"
-            .into();
-
-        let indexer_register = get_save_random_general_purpose_register(&["ECX"]);
-        let seed_register = get_save_random_general_purpose_register(&["CL", indexer_register.full]);
-
-        decoder_template
-            .replace("{R}", &indexer_register.full)
-            .replace("{RL}", &seed_register.low)
-            .replace("{K}", &self.seed.to_string())
-            .replace("{S}", &payload_size.to_string())
-    }
-
     fn generate_decoder_stub(&self, payload: &[u8]) -> Result<Vec<u8>, SgnError> {
-        let assembly = self.generate_decoder_assembly(payload.len());
-        assemble(&assembly)
+        let payload_size = payload.len();
+        let indexer_register = get_save_random_general_purpose_register(&[RCX_Full]);
+        let seed_register =
+            get_save_random_general_purpose_register(&[RCX_Full, indexer_register.clone()]);
+
+        let mut a = CodeAssembler::new(64).unwrap();
+        let mut data = a.create_label();
+        let mut decode = a.create_label();
+
+        let seed_register_low: AsmRegister8 = seed_register.low.into();
+        let indexer_register_full: AsmRegister64 = indexer_register.full.into();
+        a.mov(seed_register_low, self.seed as u32);
+        a.mov(rcx, payload_size.into());
+        a.lea(indexer_register_full, byte_ptr(data)).unwrap();
+        a.set_label(&mut decode);
+        a.xor(
+            byte_ptr(indexer_register_full - 1 + rcx),
+            seed_register_low,
+        )
+        .unwrap();
+
+        a.add(
+            seed_register_low,
+            byte_ptr(indexer_register_full + rcx),
+        )
+        .unwrap();
+        a.loop_(decode);
+        a.set_label(&mut data);
+
+        let bytes = a.assemble(0).unwrap();
+
+        Ok(bytes)
     }
 }
 
@@ -110,15 +124,15 @@ fn additive_feedback_loop(payload: &mut [u8], mut seed: u8) {
     }
 }
 
-pub fn get_save_random_general_purpose_register(excludes: &[&str]) -> &'static Register {
+pub fn get_save_random_general_purpose_register(excludes: &[AsmRegister]) -> &'static AsmRegister {
     let mut rng = rand::rng();
     let mut filtered = vec![];
 
     for reg in GENERAL_PURPOSE_REGISTERS_64_BIT.iter() {
-        if !excludes.contains(&reg.extended)
-            && !excludes.contains(&reg.full)
-            && !excludes.contains(&reg.high)
-            && !excludes.contains(&reg.low)
+        if !excludes.contains(&reg)
+            && !excludes.contains(&reg)
+            && !excludes.contains(&reg)
+            && !excludes.contains(&reg)
         {
             filtered.push(reg);
         }
@@ -129,7 +143,7 @@ pub fn get_save_random_general_purpose_register(excludes: &[&str]) -> &'static R
     *register
 }
 
-pub fn get_random_general_purpose_register() -> &'static Register {
+pub fn get_random_general_purpose_register() -> &'static AsmRegister {
     let mut rng = rand::rng();
     let register = GENERAL_PURPOSE_REGISTERS_64_BIT.choose(&mut rng).unwrap();
 
