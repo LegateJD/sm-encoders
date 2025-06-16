@@ -28,6 +28,7 @@ pub mod asm;
 pub mod sgn;
 pub mod core;
 pub mod xor_dynamic;
+pub mod x64_arch;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

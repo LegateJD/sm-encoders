@@ -15,12 +15,11 @@
  */
 
 use crate::{
-    asm::assembler::assemble,
-    sgn::{
+    asm::assembler::assemble, core::obfuscation::{CallOver, GarbageJump}, sgn::{
         instructions::SchemaInstruction,
         obfuscate::generate_garbage_instructions,
         x64_architecture::{AsmRegister, RCX_Full, Register, GENERAL_PURPOSE_REGISTERS_64_BIT},
-    },
+    }
 };
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use dynasmrt::{dynasm, DynasmApi, DynasmLabelApi};
@@ -33,7 +32,8 @@ use rand::{seq::IndexedRandom, Rng};
 use thiserror::Error;
 
 #[derive(Debug)]
-pub struct SgnEncoder {
+pub struct SgnEncoder<T: GarbageJump + CallOver> {
+    assembler: T,
     seed: u8,
     plain_decoder: bool,
 }
@@ -41,6 +41,10 @@ pub struct SgnEncoder {
 struct Operation {
     instruction: SchemaInstruction,
     key: Option<[u8; 4]>,
+}
+
+pub trait DecoderStub {
+    fn get_decoder_st(&self, payload: &[u8]) -> Result<Vec<u8>, anyhow::Error>;
 }
 
 #[derive(Error, Debug)]
