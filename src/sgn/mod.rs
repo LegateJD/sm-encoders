@@ -17,5 +17,3 @@
 pub mod encoder;
 pub mod instructions;
 pub mod obfuscate;
-pub mod utils;
-pub mod x64_architecture;

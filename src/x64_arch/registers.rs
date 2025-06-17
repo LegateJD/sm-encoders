@@ -16,24 +16,29 @@
 
 use std::fmt;
 
+use dynasmrt::{dynasm, x64::X64Relocation, x86::Rd, DynasmApi, DynasmLabelApi, VecAssembler};
 use iced_x86::code_asm::{
-    ah, bh, bl, bpl, ch, cl, dh, dil, dl, r10b, r11b, r12b, r13b, r14b, r15b, r8b, r9b, rdx, sil, spl, AsmRegister64, AsmRegister8
+    ah, bh, bl, bpl, ch, cl, dh, dil, dl, r10b, r11b, r12b, r13b, r14b, r15b, r8b, r9b, rdx, sil,
+    spl, AsmRegister64, AsmRegister8,
 };
+use rand::seq::IndexedRandom;
 
 #[derive(Debug, Clone, Copy)]
 pub struct AsmRegister {
-    pub full: AsmRegisterFull,
-    pub extended: AsmRegisterExtended,
-    pub high: AsmRegisterHigh,
-    pub low: AsmRegisterLow,
+    pub quad: QuadRegister,
+    pub double: DoubleRegister,
+    pub word: WordRegister,
+    pub low: LowRegister,
 }
 
 impl PartialEq for AsmRegister {
     fn eq(&self, other: &Self) -> bool {
-        self.full == other.full || self.extended == other.extended || self.high == other.high || self.low == other.low
+        self.quad == other.quad
+            || self.double == other.double
+            || self.word == other.word
+            || self.low == other.low
     }
 }
-
 
 #[derive(Debug, Clone, Copy)]
 pub struct AsmRegisterLow {
@@ -54,7 +59,7 @@ impl AsmRegisterLow {
     }
 }
 
-impl From<AsmRegisterLow> for AsmRegister8 {
+impl From<AsmRegisterLow> for Rb {
     fn from(value: AsmRegisterLow) -> Self {
         match value.register {
             Register::AL => ah,
@@ -114,11 +119,11 @@ impl fmt::Display for AsmRegisterHigh {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct AsmRegisterExtended {
+pub struct AsmRegisterDouble {
     register: Register,
 }
 
-impl AsmRegisterExtended {
+impl AsmRegisterDouble {
     #[must_use]
     #[inline]
     pub(crate) const fn new(register: Register) -> Self {
@@ -132,18 +137,18 @@ impl AsmRegisterExtended {
     }
 }
 
-impl fmt::Display for AsmRegisterExtended {
+impl fmt::Display for AsmRegisterDouble {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.register)
     }
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct AsmRegisterFull {
+pub struct AsmRegisterQuad {
     register: Register,
 }
 
-impl AsmRegisterFull {
+impl AsmRegisterQuad {
     #[must_use]
     #[inline]
     pub(crate) const fn new(register: Register) -> Self {
@@ -176,15 +181,103 @@ impl From<AsmRegisterLow> for AsmRegister64 {
             Register::R13 => todo!(),
             Register::R14 => todo!(),
             Register::R15 => todo!(),
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 }
 
-impl fmt::Display for AsmRegisterFull {
+impl fmt::Display for AsmRegisterQuad {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.register)
     }
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub enum LowRegister {
+    AL = 0,
+    CL = 1,
+    DL = 2,
+    BL = 3,
+    SPL = 4,
+    BPL = 5,
+    SIL = 6,
+    DIL = 7,
+    R8B = 8,
+    R9B = 9,
+    R10B = 10,
+    R11B = 11,
+    R12B = 12,
+    R13B = 13,
+    R14B = 14,
+    R15B = 15,
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub enum HighRegister {
+    AH = 4,
+    CH = 5,
+    DH = 6,
+    BH = 7,
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub enum WordRegister {
+    AX = 0,
+    CX = 1,
+    DX = 2,
+    BX = 3,
+    SP = 4,
+    BP = 5,
+    SI = 6,
+    DI = 7,
+    R8W = 8,
+    R9W = 9,
+    R10W = 10,
+    R11W = 11,
+    R12W = 12,
+    R13W = 13,
+    R14W = 14,
+    R15W = 15,
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub enum DoubleRegister {
+    EAX = 0,
+    ECX = 1,
+    EDX = 2,
+    EBX = 3,
+    ESP = 4,
+    EBP = 5,
+    ESI = 6,
+    EDI = 7,
+    R8D = 8,
+    R9D = 9,
+    R10D = 10,
+    R11D = 11,
+    R12D = 12,
+    R13D = 13,
+    R14D = 14,
+    R15D = 15,
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub enum QuadRegister {
+    RAX = 0,
+    RCX = 1,
+    RDX = 2,
+    RBX = 3,
+    RSP = 4,
+    RBP = 5,
+    RSI = 6,
+    RDI = 7,
+    R8 = 8,
+    R9 = 9,
+    R10 = 10,
+    R11 = 11,
+    R12 = 12,
+    R13 = 13,
+    R14 = 14,
+    R15 = 15,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
@@ -336,170 +429,145 @@ impl fmt::Display for Register {
     }
 }
 
-pub const AL: AsmRegisterLow = AsmRegisterLow::new(Register::AL);
-pub const CL: AsmRegisterLow = AsmRegisterLow::new(Register::CL);
-pub const DL: AsmRegisterLow = AsmRegisterLow::new(Register::DL);
-pub const BL: AsmRegisterLow = AsmRegisterLow::new(Register::BL);
-pub const AH: AsmRegisterLow = AsmRegisterLow::new(Register::AH);
-pub const CH: AsmRegisterLow = AsmRegisterLow::new(Register::CH);
-pub const DH: AsmRegisterLow = AsmRegisterLow::new(Register::DH);
-pub const BH: AsmRegisterLow = AsmRegisterLow::new(Register::BH);
-pub const SPL: AsmRegisterLow = AsmRegisterLow::new(Register::SPL);
-pub const BPL: AsmRegisterLow = AsmRegisterLow::new(Register::BPL);
-pub const SIL: AsmRegisterLow = AsmRegisterLow::new(Register::SIL);
-pub const DIL: AsmRegisterLow = AsmRegisterLow::new(Register::DIL);
-pub const R8B: AsmRegisterLow = AsmRegisterLow::new(Register::R8B);
-pub const R9B: AsmRegisterLow = AsmRegisterLow::new(Register::R9B);
-pub const R10B: AsmRegisterLow = AsmRegisterLow::new(Register::R10B);
-pub const R11B: AsmRegisterLow = AsmRegisterLow::new(Register::R11B);
-pub const R12B: AsmRegisterLow = AsmRegisterLow::new(Register::R12B);
-pub const R13B: AsmRegisterLow = AsmRegisterLow::new(Register::R13B);
-pub const R14B: AsmRegisterLow = AsmRegisterLow::new(Register::R14B);
-pub const R15B: AsmRegisterLow = AsmRegisterLow::new(Register::R15B);
+pub const RAX_FULL: AsmRegister = AsmRegister {
+    quad: QuadRegister::RAX,
+    double: DoubleRegister::EAX,
+    word: WordRegister::AX,
+    low: LowRegister::AL,
+};
 
-pub const AX: AsmRegisterHigh = AsmRegisterHigh::new(Register::AX);
-pub const CX: AsmRegisterHigh = AsmRegisterHigh::new(Register::CX);
-pub const DX: AsmRegisterHigh = AsmRegisterHigh::new(Register::DX);
-pub const BX: AsmRegisterHigh = AsmRegisterHigh::new(Register::BX);
-pub const SP: AsmRegisterHigh = AsmRegisterHigh::new(Register::SP);
-pub const BP: AsmRegisterHigh = AsmRegisterHigh::new(Register::BP);
-pub const SI: AsmRegisterHigh = AsmRegisterHigh::new(Register::SI);
-pub const DI: AsmRegisterHigh = AsmRegisterHigh::new(Register::DI);
-pub const R8W: AsmRegisterHigh = AsmRegisterHigh::new(Register::R8W);
-pub const R9W: AsmRegisterHigh = AsmRegisterHigh::new(Register::R9W);
-pub const R10W: AsmRegisterHigh = AsmRegisterHigh::new(Register::R10W);
-pub const R11W: AsmRegisterHigh = AsmRegisterHigh::new(Register::R11W);
-pub const R12W: AsmRegisterHigh = AsmRegisterHigh::new(Register::R12W);
-pub const R13W: AsmRegisterHigh = AsmRegisterHigh::new(Register::R13W);
-pub const R14W: AsmRegisterHigh = AsmRegisterHigh::new(Register::R14W);
-pub const R15W: AsmRegisterHigh = AsmRegisterHigh::new(Register::R15W);
+pub const RBX_FULL: AsmRegister = AsmRegister {
+    quad: QuadRegister::RBX,
+    double: DoubleRegister::EBX,
+    word: WordRegister::BX,
+    low: LowRegister::BL,
+};
 
-pub const EAX: AsmRegisterExtended = AsmRegisterExtended::new(Register::EAX);
-pub const ECX: AsmRegisterExtended = AsmRegisterExtended::new(Register::ECX);
-pub const EDX: AsmRegisterExtended = AsmRegisterExtended::new(Register::EDX);
-pub const EBX: AsmRegisterExtended = AsmRegisterExtended::new(Register::EBX);
-pub const ESP: AsmRegisterExtended = AsmRegisterExtended::new(Register::ESP);
-pub const EBP: AsmRegisterExtended = AsmRegisterExtended::new(Register::EBP);
-pub const ESI: AsmRegisterExtended = AsmRegisterExtended::new(Register::ESI);
-pub const EDI: AsmRegisterExtended = AsmRegisterExtended::new(Register::EDI);
-pub const R8D: AsmRegisterExtended = AsmRegisterExtended::new(Register::R8D);
-pub const R9D: AsmRegisterExtended = AsmRegisterExtended::new(Register::R9D);
-pub const R10D: AsmRegisterExtended = AsmRegisterExtended::new(Register::R10D);
-pub const R11D: AsmRegisterExtended = AsmRegisterExtended::new(Register::R11D);
-pub const R12D: AsmRegisterExtended = AsmRegisterExtended::new(Register::R12D);
-pub const R13D: AsmRegisterExtended = AsmRegisterExtended::new(Register::R13D);
-pub const R14D: AsmRegisterExtended = AsmRegisterExtended::new(Register::R14D);
-pub const R15D: AsmRegisterExtended = AsmRegisterExtended::new(Register::R15D);
+pub const RCX_FULL: AsmRegister = AsmRegister {
+    quad: QuadRegister::RCX,
+    double: DoubleRegister::ECX,
+    word: WordRegister::CX,
+    low: LowRegister::CL,
+};
 
-pub const RAX: AsmRegisterFull = AsmRegisterFull::new(Register::RAX);
-pub const RCX: AsmRegisterFull = AsmRegisterFull::new(Register::RCX);
-pub const RDX: AsmRegisterFull = AsmRegisterFull::new(Register::RDX);
-pub const RBX: AsmRegisterFull = AsmRegisterFull::new(Register::RBX);
-pub const RSP: AsmRegisterFull = AsmRegisterFull::new(Register::RSP);
-pub const RBP: AsmRegisterFull = AsmRegisterFull::new(Register::RBP);
-pub const RSI: AsmRegisterFull = AsmRegisterFull::new(Register::RSI);
-pub const RDI: AsmRegisterFull = AsmRegisterFull::new(Register::RDI);
-pub const R8: AsmRegisterFull = AsmRegisterFull::new(Register::R8);
-pub const R9: AsmRegisterFull = AsmRegisterFull::new(Register::R9);
-pub const R10: AsmRegisterFull = AsmRegisterFull::new(Register::R10);
-pub const R11: AsmRegisterFull = AsmRegisterFull::new(Register::R11);
-pub const R12: AsmRegisterFull = AsmRegisterFull::new(Register::R12);
-pub const R13: AsmRegisterFull = AsmRegisterFull::new(Register::R13);
-pub const R14: AsmRegisterFull = AsmRegisterFull::new(Register::R14);
-pub const R15: AsmRegisterFull = AsmRegisterFull::new(Register::R15);
+pub const RDX_FULL: AsmRegister = AsmRegister {
+    quad: QuadRegister::RDX,
+    double: DoubleRegister::EDX,
+    word: WordRegister::DX,
+    low: LowRegister::DL,
+};
 
-pub const RAX_Full: AsmRegister = AsmRegister {
-        full: RAX,
-        extended: EAX,
-        high: AX,
-        low: AL,
-    }; 
+pub const RSI_FULL: AsmRegister = AsmRegister {
+    quad: QuadRegister::RSI,
+    double: DoubleRegister::ESI,
+    word: WordRegister::SI,
+    low: LowRegister::SIL, // Note: For SI, DI, BP, SP, the 8-bit registers are SIL, DIL, BPL, SPL in x86-64
+};
 
-    pub const RCX_Full: AsmRegister = AsmRegister {
-        full: RCX,
-        extended: ECX,
-        high: CX,
-        low: CL,
-    }; 
+pub const RDI_FULL: AsmRegister = AsmRegister {
+    quad: QuadRegister::RDI,
+    double: DoubleRegister::EDI,
+    word: WordRegister::DI,
+    low: LowRegister::DIL,
+};
+
+pub const RBP_FULL: AsmRegister = AsmRegister {
+    quad: QuadRegister::RBP,
+    double: DoubleRegister::EBP,
+    word: WordRegister::BP,
+    low: LowRegister::BPL,
+};
+
+pub const RSP_FULL: AsmRegister = AsmRegister {
+    quad: QuadRegister::RSP,
+    double: DoubleRegister::ESP,
+    word: WordRegister::SP,
+    low: LowRegister::SPL,
+};
+
+pub const R8_FULL: AsmRegister = AsmRegister {
+    quad: QuadRegister::R8,
+    double: DoubleRegister::R8D,
+    word: WordRegister::R8W,
+    low: LowRegister::R8B,
+};
+
+pub const R9_FULL: AsmRegister = AsmRegister {
+    quad: QuadRegister::R9,
+    double: DoubleRegister::R9D,
+    word: WordRegister::R9W,
+    low: LowRegister::R9B,
+};
+
+pub const R10_FULL: AsmRegister = AsmRegister {
+    quad: QuadRegister::R10,
+    double: DoubleRegister::R10D,
+    word: WordRegister::R10W,
+    low: LowRegister::R10B,
+};
+
+pub const R11_FULL: AsmRegister = AsmRegister {
+    quad: QuadRegister::R11,
+    double: DoubleRegister::R11D,
+    word: WordRegister::R11W,
+    low: LowRegister::R11B,
+};
+
+pub const R12_FULL: AsmRegister = AsmRegister {
+    quad: QuadRegister::R12,
+    double: DoubleRegister::R12D,
+    word: WordRegister::R12W,
+    low: LowRegister::R12B,
+};
+
+pub const R13_FULL: AsmRegister = AsmRegister {
+    quad: QuadRegister::R13,
+    double: DoubleRegister::R13D,
+    word: WordRegister::R13W,
+    low: LowRegister::R13B,
+};
+
+pub const R14_FULL: AsmRegister = AsmRegister {
+    quad: QuadRegister::R14,
+    double: DoubleRegister::R14D,
+    word: WordRegister::R14W,
+    low: LowRegister::R14B,
+};
+
+pub const R15_FULL: AsmRegister = AsmRegister {
+    quad: QuadRegister::R15,
+    double: DoubleRegister::R15D,
+    word: WordRegister::R15W,
+    low: LowRegister::R15B,
+};
 
 pub const GENERAL_PURPOSE_REGISTERS_64_BIT: &[AsmRegister] = &[
-    RAX_Full,
-    AsmRegister {
-        full: RBX,
-        extended: EBX,
-        high: BX,
-        low: BL,
-    },
-    AsmRegister {
-        full: RCX,
-        extended: ECX,
-        high: CX,
-        low: CL,
-    },
-    AsmRegister {
-        full: RDX,
-        extended: EDX,
-        high: DX,
-        low: DL,
-    },
-    AsmRegister {
-        full: RSI,
-        extended: ESI,
-        high: SI,
-        low: SIL,
-    },
-    AsmRegister {
-        full: RDI,
-        extended: EDI,
-        high: DI,
-        low: DIL,
-    },
-    AsmRegister {
-        full: R8,
-        extended: R8D,
-        high: R8W,
-        low: R8B,
-    },
-    AsmRegister {
-        full: R9,
-        extended: R9D,
-        high: R9W,
-        low: R9B,
-    },
-    AsmRegister {
-        full: R10,
-        extended: R10D,
-        high: R10W,
-        low: R10B,
-    },
-    AsmRegister {
-        full: R11,
-        extended: R11D,
-        high: R11W,
-        low: R11B,
-    },
-    AsmRegister {
-        full: R12,
-        extended: R12D,
-        high: R12W,
-        low: R12B,
-    },
-    AsmRegister {
-        full: R13,
-        extended: R13D,
-        high: R13W,
-        low: R13B,
-    },
-    AsmRegister {
-        full: R14,
-        extended: R14D,
-        high: R14W,
-        low: R14B,
-    },
-    AsmRegister {
-        full: R15,
-        extended: R15D,
-        high: R15W,
-        low: R15B,
-    },
+    RAX_FULL, RBX_FULL, RCX_FULL, RDX_FULL, RSI_FULL, RDI_FULL, RBP_FULL, RSP_FULL, R8_FULL,
+    R9_FULL, R10_FULL, R11_FULL, R12_FULL, R13_FULL, R14_FULL, R15_FULL,
 ];
+
+pub fn get_save_random_general_purpose_register(excludes: &[AsmRegister]) -> &'static AsmRegister {
+    let mut rng = rand::rng();
+    let mut filtered = vec![];
+
+    for reg in GENERAL_PURPOSE_REGISTERS_64_BIT.iter() {
+        if !excludes.contains(&reg)
+            && !excludes.contains(&reg)
+            && !excludes.contains(&reg)
+            && !excludes.contains(&reg)
+        {
+            filtered.push(reg);
+        }
+    }
+
+    let register = filtered.choose(&mut rng).unwrap();
+
+    *register
+}
+
+pub fn get_random_general_purpose_register() -> &'static AsmRegister {
+    let mut rng = rand::rng();
+    let register = GENERAL_PURPOSE_REGISTERS_64_BIT.choose(&mut rng).unwrap();
+
+    register
+}
