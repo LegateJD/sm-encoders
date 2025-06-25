@@ -17,15 +17,10 @@
 use rand::{seq::IndexedRandom, Rng, RngCore};
 
 use crate::{
-    asm::assembler::assemble,
-    sgn::{
-        encoder::{get_random_general_purpose_register, SgnError},
-        instructions::{CONDITIONAL_JUMP_MNEMONICS, SAFE_GARBAGE_INSTRUCTIONS},
-        utils::{coin_flip, random_label},
-    },
+    asm::assembler::assemble, core::utils::{coin_flip, random_label}, sgn::instructions::{CONDITIONAL_JUMP_MNEMONICS, SAFE_GARBAGE_INSTRUCTIONS}, x64_arch::registers::get_random_general_purpose_register
 };
 
-pub fn generate_garbage_instructions() -> Result<Vec<u8>, SgnError> {
+pub fn generate_garbage_instructions() -> Result<Vec<u8>, anyhow::Error> {
     let garbage_assembly = generate_garbage_assembly();
     let mut garbage_bin = assemble(&garbage_assembly)?;
 
@@ -53,7 +48,7 @@ fn generate_garbage_assembly() -> String {
     let mut rng = rand::rng();
     let random_byte = format!("0x{:x}", rng.random::<u8>());
     garbage_assembly
-        .replace("{R}", &register.full)
+        .replace("{R}", &register.quad.to_string())
         .replace("{K}", &random_byte)
         .replace("{L}", &random_label(5))
         .replace("{G}", &generate_garbage_assembly())
@@ -76,7 +71,7 @@ fn get_random_safe_assembly() -> String {
     }
 }
 
-fn generate_garbage_jump() -> Result<Vec<u8>, SgnError> {
+fn generate_garbage_jump() -> Result<Vec<u8>, anyhow::Error> {
     let mut rng = rand::rng();
     let mut random_bytes = vec![0; 10];
     rng.fill_bytes(&mut random_bytes);
@@ -85,7 +80,7 @@ fn generate_garbage_jump() -> Result<Vec<u8>, SgnError> {
     Ok(garbage_jmp)
 }
 
-fn add_jmp_over(payload: Vec<u8>) -> Result<Vec<u8>, SgnError> {
+fn add_jmp_over(payload: Vec<u8>) -> Result<Vec<u8>, anyhow::Error> {
     let jmp_assembly = format!("jmp 0x{:x}", payload.len() + 2);
     let mut final_bin = assemble(&jmp_assembly)?;
     final_bin.extend(payload.into_iter());

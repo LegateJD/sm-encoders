@@ -22,10 +22,14 @@ use std::{
 use clap::{arg, Parser};
 use rand::Rng;
 
-use crate::sgn::encoder::SgnEncoder;
+use crate::{sgn::encoder::SgnEncoder, x64_arch::obfuscation::X64CodeAssembler};
 
 pub mod asm;
 pub mod sgn;
+pub mod core;
+pub mod xor_dynamic;
+pub mod x64_arch;
+pub mod schema;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -54,7 +58,8 @@ fn encode() -> Result<(), String> {
     let args = Args::parse();
     let mut buf = vec![];
     let seed: u8 = rand::rng().random();
-    let encoder = SgnEncoder::new(seed, args.plain_encoder);
+
+    let encoder = SgnEncoder::new(seed, X64CodeAssembler {});
 
     let mut input_file = File::open(&args.input).map_err(|x| x.to_string())?;
     input_file

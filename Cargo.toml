@@ -4,8 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.98"
 byteorder = "1.5.0"
 clap = { version = "4.5.39", features = ["derive"] }
+dynasmrt = "3.2.0"
 keystone-engine = { version = "0.1.0", features = ["use-system-lib"] }
 rand = "0.9.1"
 thiserror = "2.0.12"
+
+[dependencies.iced-x86]
+version = "1.21.0"
+features = ["code_asm"]
