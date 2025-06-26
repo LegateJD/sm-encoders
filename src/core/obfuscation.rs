@@ -5,7 +5,7 @@ pub trait GarbageJump {
 }
 
 pub trait GarbageAssembly {
-    fn generate_garbage_assembly() -> Vec<u8>;
+    fn generate_garbage_assembly(&self) -> Vec<u8>;
 }
 
 pub trait CallOver {

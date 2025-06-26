@@ -1,17 +1,11 @@
 struct XorDynamicEncoder {}
 
 impl XorDynamicEncoder {
-    pub fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, anyhow::Error> {}
+    pub fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, anyhow::Error> {
+        todo!()
+    }
 }
 
-fn generate_key() -> {
-    
-}
-
-fn generate_decoder_stub(payload: &[u8]) -> Result<Vec<u8>, SgnError> {
-    let assembly = generate_decoder_assembly(payload.len());
-    assemble(&assembly)
-}
 
 fn generate_decoder_assembly(payload_size: usize) -> String {
     let decoder_template: String = "JMP _call
@@ -39,12 +33,5 @@ JMP  RCX
 CALL _ret"
         .into();
 
-    let indexer_register = get_save_random_general_purpose_register(&["ECX"]);
-    let seed_register = get_save_random_general_purpose_register(&["CL", indexer_register.full]);
-
-    decoder_template
-        .replace("{R}", &indexer_register.full)
-        .replace("{RL}", &seed_register.low)
-        .replace("{K}", &self.seed.to_string())
-        .replace("{S}", &payload_size.to_string())
+    todo!()
 }
