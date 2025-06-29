@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-use dynasmrt::{dynasm, x64::X64Relocation, x86::Rd, DynasmApi, DynasmLabelApi, VecAssembler};
 use rand::seq::IndexedRandom;
 
 #[derive(Debug, Clone, Copy)]

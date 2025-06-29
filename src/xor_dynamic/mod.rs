@@ -15,3 +15,4 @@
  */
 
 pub mod encoder;
+pub mod x64;

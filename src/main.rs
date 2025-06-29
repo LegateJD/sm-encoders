@@ -22,14 +22,14 @@ use std::{
 use clap::{arg, Parser};
 use rand::Rng;
 
-use crate::{sgn::encoder::SgnEncoder, x64_arch::obfuscation::X64CodeAssembler};
+use crate::{obfuscation::x64::X64CodeAssembler, sgn::encoder::SgnEncoder};
 
-pub mod asm;
 pub mod sgn;
 pub mod core;
 pub mod xor_dynamic;
 pub mod x64_arch;
 pub mod schema;
+pub mod obfuscation;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

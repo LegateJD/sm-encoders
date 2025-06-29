@@ -19,14 +19,9 @@ use dynasmrt::{dynasm, x64::X64Relocation, DynasmApi, DynasmLabelApi, VecAssembl
 use rand::{Rng, RngCore};
 
 use crate::{
-    core::{
-        obfuscation::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump},
-        utils::coin_flip,
-    },
-    sgn::encoder::SgnDecoderStub,
-    x64_arch::{garbage::generate_garbage_assembly, registers::{
-        get_random_general_purpose_register, get_save_random_general_purpose_register, RCX_FULL,
-    }},
+    core::utils::coin_flip, obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump}, sgn::encoder::SgnDecoderStub, x64_arch::{garbage::generate_garbage_assembly, registers::{
+        get_save_random_general_purpose_register, RCX_FULL,
+    }}
 };
 
 pub struct X64CodeAssembler {}
@@ -83,35 +78,5 @@ impl GarbageInstructions for X64CodeAssembler {
 impl GarbageAssembly for X64CodeAssembler {
     fn generate_garbage_assembly(&self) -> Vec<u8> {
         generate_garbage_assembly()
-    }
-}
-
-impl SgnDecoderStub for X64CodeAssembler {
-    fn get_sgn_decoder_stub(
-        &self,
-        seed: u8,
-        payload_size: usize,
-    ) -> Result<Vec<u8>, anyhow::Error> {
-        let mut assembler = VecAssembler::<X64Relocation>::new(0);
-        let indexer_register = get_save_random_general_purpose_register(&[RCX_FULL]);
-        let seed_register =
-            get_save_random_general_purpose_register(&[RCX_FULL, indexer_register.clone()]);
-        let indexer_register_id = indexer_register.quad as u8;
-        let seed_register_id = seed_register.low as u8;
-
-        dynasm!(assembler
-            ; mov Rb(seed_register_id), seed as i8
-            ; mov rcx, payload_size as i32
-            ; lea Rq(indexer_register_id), [>data - 1]
-            ; decode:
-            ; xor BYTE [Rq(indexer_register_id) + rcx], Rb(seed_register_id)
-            ; add Rb(seed_register_id), BYTE [Rq(indexer_register_id) + rcx]
-            ; loop <decode
-            ; data:
-        );
-
-        let bytes = assembler.finalize()?;
-
-        Ok(bytes)
     }
 }

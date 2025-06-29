@@ -16,12 +16,12 @@
 
 use thiserror::Error;
 
-use crate::core::obfuscation::{CallOver, GarbageJump};
+use crate::obfuscation::common::{CallOver, GarbageJump};
 
 #[derive(Debug)]
-pub struct SgnEncoder<T: GarbageJump + CallOver + SgnDecoderStub> {
+pub struct SgnEncoder<AsmType: GarbageJump + CallOver + SgnDecoderStub> {
     seed: u8,
-    assembler: T
+    assembler: AsmType
 }
 
 pub trait SgnDecoderStub {
@@ -45,7 +45,6 @@ impl<T: GarbageJump + CallOver + SgnDecoderStub> SgnEncoder<T> {
     pub fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, anyhow::Error> {
         let mut data = payload.to_vec();
         additive_feedback_loop(&mut data, self.seed);
-
         let mut full_binary = self.assembler.get_sgn_decoder_stub(self.seed, data.len())?;
         full_binary.extend(data.iter());
 

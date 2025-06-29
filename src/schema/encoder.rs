@@ -25,12 +25,7 @@ use rand::{
 };
 
 use crate::{
-    core::obfuscation::{CallOver, Encode, GarbageInstructions, GarbageJump},
-    sgn::encoder::SgnDecoderStub,
-    x64_arch::{
-        obfuscation::X64CodeAssembler,
-        registers::{get_save_random_general_purpose_register, RSP_FULL},
-    },
+    core::encoder::Encode, obfuscation::{common::{CallOver, GarbageInstructions, GarbageJump}, x64::X64CodeAssembler}, sgn::encoder::SgnDecoderStub, x64_arch::registers::{get_save_random_general_purpose_register, RSP_FULL}
 };
 
 struct SchemaEncoder<

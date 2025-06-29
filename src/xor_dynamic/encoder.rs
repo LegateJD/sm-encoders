@@ -16,6 +16,10 @@
 
 struct XorDynamicEncoder {}
 
+pub trait XorDynamicStub {
+    fn get_decoder_stub(&self, payload_size: usize) -> Result<Vec<u8>, anyhow::Error>;
+}
+
 impl XorDynamicEncoder {
     pub fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, anyhow::Error> {
         todo!()
