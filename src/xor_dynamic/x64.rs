@@ -1,32 +1,43 @@
 use crate::{obfuscation::x64::X64CodeAssembler, xor_dynamic::encoder::XorDynamicStub};
+use dynasmrt::{dynasm, x64::X64Relocation, DynasmApi, DynasmLabelApi, VecAssembler};
 
 impl XorDynamicStub for X64CodeAssembler {
     fn get_decoder_stub(&self, payload_size: usize) -> Result<Vec<u8>, anyhow::Error> {
-        let decoder_template: String = "JMP _call
-POP RBX
-PUSH RBX
-POP RDI
-MOV AL, 'A'
-CLD
-SCAS AL, BYTE PTR ES:[RDI]
-JNE _lp1
-PUSH RDI
-POP RCX
-PUSH RBX
-POP RSI
-MOV AL, BYTE PTR [RSI]
-XOR BYTE PTR [DIR], AL
-INC RDI
-INC RSI
-CMP WORD PTR [RDI], 'BB'
-JE  _jmp
-CMP BYTE PTR [RSI], 'A'
-JNE _lp3
-JMP _lp2
-JMP  RCX
-CALL _ret"
-            .into();
+        let mut assembler = VecAssembler::<X64Relocation>::new(0);
+        dynasm!(assembler
+            ; jmp >call_label
+            ; ret_label:
+            ; pop rbx
+            ; push rbx
+            ; pop rdi
+            ; mov al, 'A' as i8
+            ; cld
+            ; lp1:
+            ; scasb
+            ; jne <lp1
+            ; push rdi
+            ; pop rcx
+            ; lp2:
+            ; push rbx
+            ; pop rsi
+            ; lp3:
+            ; mov al, BYTE [rsi]
+            ; xor BYTE [rdi], al
+            ; inc rdi
+            ; inc rsi
+            ; cmp WORD [rdi], 0x4242
+            ; je >jmp_label
+            ; cmp BYTE [rsi], 'A' as i8
+            ; jne <lp3
+            ; jmp <lp2
+            ; jmp_label:
+            ; jmp rcx
+            ; call_label:
+            ; call <ret_label
+        );
 
-        todo!()
+        let bytes = assembler.finalize()?;
+
+        Ok(bytes)
     }
 }
