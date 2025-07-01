@@ -17,3 +17,7 @@
 pub trait Encode {
     fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, anyhow::Error>;
 }
+
+pub trait AsmInit {
+    fn new() -> Self;
+}

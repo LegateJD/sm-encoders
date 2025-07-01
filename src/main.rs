@@ -19,10 +19,10 @@ use std::{
     io::{Read, Write},
 };
 
-use clap::{arg, Parser};
+use clap::{arg, Parser, ValueEnum};
 use rand::Rng;
 
-use crate::{obfuscation::x64::X64CodeAssembler, sgn::encoder::SgnEncoder};
+use crate::{obfuscation::x64::X64CodeAssembler, sgn::encoder::{SgnEncoder, SgnEncoderX64}, xor_dynamic::encoder::XorDynamicEncoderX64};
 
 pub mod sgn;
 pub mod core;
@@ -42,9 +42,14 @@ struct Args {
     #[arg(short, long)]
     output: String,
 
-    /// Do not encode the decoder stub
-    #[arg(short, long)]
-    plain_encoder: bool,
+    #[arg(short, long, value_enum)]
+    encoder_type: EncoderType,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+enum EncoderType {
+    Sgn,
+    XorDynamic,
 }
 
 fn main() {
@@ -59,13 +64,19 @@ fn encode() -> Result<(), String> {
     let mut buf = vec![];
     let seed: u8 = rand::rng().random();
 
-    let encoder = SgnEncoder::new(seed, X64CodeAssembler {});
+    let sgn_encoder = SgnEncoderX64::new(seed);
+    let xor_dynamic_encoder = XorDynamicEncoderX64::new(seed);
 
     let mut input_file = File::open(&args.input).map_err(|x| x.to_string())?;
     input_file
         .read_to_end(&mut buf)
         .map_err(|e| e.to_string())?;
-    let encoded = encoder.encode(&buf).map_err(|x| x.to_string())?;
+
+    let encoded = match args.encoder_type {
+        EncoderType::Sgn => sgn_encoder.encode(&buf).map_err(|x| x.to_string())?,
+        EncoderType::XorDynamic => xor_dynamic_encoder.encode(&buf).map_err(|x| x.to_string())?,
+    };
+
     let mut output_file = File::create(&args.output).map_err(|x| x.to_string())?;
     output_file.write_all(&encoded).map_err(|x| x.to_string())?;
 

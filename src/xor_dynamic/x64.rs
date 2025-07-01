@@ -5,7 +5,7 @@ impl XorDynamicStub for X64CodeAssembler {
     fn get_decoder_stub(&self, payload_size: usize) -> Result<Vec<u8>, anyhow::Error> {
         let mut assembler = VecAssembler::<X64Relocation>::new(0);
         dynasm!(assembler
-            ; jmp >call_label
+            ; jmp BYTE >call_label
             ; ret_label:
             ; pop rbx
             ; push rbx
@@ -14,7 +14,7 @@ impl XorDynamicStub for X64CodeAssembler {
             ; cld
             ; lp1:
             ; scasb
-            ; jne <lp1
+            ; jne BYTE <lp1
             ; push rdi
             ; pop rcx
             ; lp2:
@@ -26,10 +26,10 @@ impl XorDynamicStub for X64CodeAssembler {
             ; inc rdi
             ; inc rsi
             ; cmp WORD [rdi], 0x4242
-            ; je >jmp_label
+            ; je BYTE >jmp_label
             ; cmp BYTE [rsi], 'A' as i8
-            ; jne <lp3
-            ; jmp <lp2
+            ; jne BYTE <lp3
+            ; jmp BYTE <lp2
             ; jmp_label:
             ; jmp rcx
             ; call_label:

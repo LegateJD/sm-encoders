@@ -19,12 +19,18 @@ use dynasmrt::{dynasm, x64::X64Relocation, DynasmApi, DynasmLabelApi, VecAssembl
 use rand::{Rng, RngCore};
 
 use crate::{
-    core::utils::coin_flip, obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump}, sgn::encoder::SgnDecoderStub, x64_arch::{garbage::generate_garbage_assembly, registers::{
+    core::{encoder::AsmInit, utils::coin_flip}, obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump}, sgn::encoder::SgnDecoderStub, x64_arch::{garbage::generate_garbage_assembly, registers::{
         get_save_random_general_purpose_register, RCX_FULL,
     }}
 };
 
 pub struct X64CodeAssembler {}
+
+impl AsmInit for X64CodeAssembler {
+    fn new() -> Self {
+        X64CodeAssembler {  }
+    }
+}
 
 impl GarbageJump for X64CodeAssembler {
     fn get_jmp_over(&self, payload: &[u8]) -> Result<Vec<u8>, anyhow::Error> {

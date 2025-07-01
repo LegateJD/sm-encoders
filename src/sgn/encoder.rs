@@ -14,18 +14,28 @@
  * limitations under the License.
  */
 
+use rand::Rng;
 use thiserror::Error;
 
-use crate::obfuscation::common::{CallOver, GarbageJump};
+use crate::{
+    core::encoder::AsmInit,
+    obfuscation::{
+        common::{CallOver, GarbageJump},
+        x64::X64CodeAssembler,
+    },
+};
+
+pub type SgnEncoderX64 = SgnEncoder<X64CodeAssembler>;
 
 #[derive(Debug)]
 pub struct SgnEncoder<AsmType: GarbageJump + CallOver + SgnDecoderStub> {
     seed: u8,
-    assembler: AsmType
+    assembler: AsmType,
 }
 
 pub trait SgnDecoderStub {
-    fn get_sgn_decoder_stub(&self, seed: u8, payload_size: usize) -> Result<Vec<u8>, anyhow::Error>;
+    fn get_sgn_decoder_stub(&self, seed: u8, payload_size: usize)
+        -> Result<Vec<u8>, anyhow::Error>;
 }
 
 #[derive(Error, Debug)]
@@ -34,12 +44,14 @@ pub enum SgnError {
     AssemblerError,
 }
 
-impl<T: GarbageJump + CallOver + SgnDecoderStub> SgnEncoder<T> {
-    pub fn new(seed: u8, assembler: T) -> Self {
-        SgnEncoder {
-            seed,
-            assembler
-        }
+impl<AsmType> SgnEncoder<AsmType>
+where
+    AsmType: GarbageJump + CallOver + SgnDecoderStub + AsmInit
+{
+    pub fn new(seed: u8) -> Self {
+        let assembler = AsmType::new();
+
+        Self { seed, assembler }
     }
 
     pub fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, anyhow::Error> {

@@ -14,30 +14,35 @@
  * limitations under the License.
  */
 
-use std::collections::HashSet;
+use std::{collections::HashSet, str::FromStr};
 
 use anyhow::anyhow;
 use thiserror::Error;
 
-struct XorDynamicEncoder {
-    pub name: String,
-    pub stub: Vec<u8>,
-    pub stub_key_term: Vec<u8>,
-    pub stub_payload_term: Vec<u8>,
-    pub badchars: HashSet<u8>
+use crate::{core::encoder::AsmInit, obfuscation::x64::X64CodeAssembler};
+
+pub type XorDynamicEncoderX64 = XorDynamicEncoder<X64CodeAssembler>;
+
+#[derive(Debug)]
+pub struct XorDynamicEncoder<AsmType: XorDynamicStub> {
+    assembler: AsmType,
+    name: String,
+    stub_key_term: Vec<u8>,
+    stub_payload_term: Vec<u8>,
+    badchars: HashSet<u8>,
 }
 
 #[derive(Error, Debug)]
 pub enum EncoderError {
-    #[error("data store disconnected")]
-    BadCharacters
+    #[error("BadCharacters")]
+    BadCharacters,
 }
 
 pub trait XorDynamicStub {
     fn get_decoder_stub(&self, payload_size: usize) -> Result<Vec<u8>, anyhow::Error>;
 }
 
-pub fn find_key(
+pub fn generate_key(
     buf: &[u8],
     badchars: &HashSet<u8>,
     key_chars: &[u8],
@@ -112,12 +117,28 @@ pub fn find_key(
     todo!()
 }
 
-impl XorDynamicEncoder {
+impl<AsmType> XorDynamicEncoder<AsmType>
+where
+    AsmType: XorDynamicStub + AsmInit
+{
+    pub fn new(seed: u8) -> Self {
+        let assembler = AsmType::new();
+        let name = String::from_str("xor dynamic").unwrap();
+        let stub_key_term = vec![0x41];
+        let stub_payload_term = vec![0x42, 0x42];
+        let mut badchars = HashSet::new();
+        badchars.insert(0x00);
+        badchars.insert(0x0a);
+        badchars.insert(0x0d);
+
+        Self { assembler, name, stub_key_term, stub_payload_term, badchars }
+    }
+
     pub fn encode(&self, buf: &[u8]) -> Result<Vec<u8>, anyhow::Error> {
         let mut badchars = self.badchars.clone();
+        let mut stub = self.assembler.get_decoder_stub(buf.len())?;
 
-        let stub_without_terms = self
-            .stub
+        let stub_without_terms = stub
             .windows(self.stub_key_term.len())
             .filter(|w| *w != self.stub_key_term.as_slice())
             .collect::<Vec<_>>()
@@ -135,7 +156,7 @@ impl XorDynamicEncoder {
 
         let key_chars: Vec<u8> = (1u8..=255).filter(|c| !badchars.contains(c)).collect();
 
-        let key = find_key(buf, &badchars, &key_chars)?;
+        let key = generate_key(buf, &badchars, &key_chars)?;
 
         let mut key_term = None;
         let mut rng = rand::thread_rng();
@@ -190,7 +211,7 @@ impl XorDynamicEncoder {
 
         let mut final_payload = Vec::new();
 
-        let mut stub_replaced = self.stub.clone();
+        let mut stub_replaced = stub.clone();
         stub_replaced = replace_subsequence(&stub_replaced, &self.stub_key_term, &[key_term]);
         stub_replaced = replace_subsequence(&stub_replaced, &self.stub_payload_term, &payload_term);
 
