@@ -14,52 +14,53 @@
  * limitations under the License.
  */
 
-use keystone_engine::KeystoneError;
+use rand::Rng;
 use thiserror::Error;
 
-use crate::{core::obfuscation::{CallOver, GarbageJump}, x64_arch::registers::{get_save_random_general_purpose_register, RCX_FULL}};
+use crate::{
+    core::encoder::AsmInit,
+    obfuscation::{
+        common::{CallOver, GarbageJump},
+        x64::X64CodeAssembler,
+    },
+};
+
+pub type SgnEncoderX64 = SgnEncoder<X64CodeAssembler>;
 
 #[derive(Debug)]
-pub struct SgnEncoder<T: GarbageJump + CallOver + SgnDecoderStub> {
+pub struct SgnEncoder<AsmType: GarbageJump + CallOver + SgnDecoderStub> {
     seed: u8,
-    assembler: T
+    assembler: AsmType,
 }
 
 pub trait SgnDecoderStub {
-    fn get_sgn_decoder_stub(&self, seed: i8, payload_size: usize) -> Result<Vec<u8>, anyhow::Error>;
+    fn get_sgn_decoder_stub(&self, seed: u8, payload_size: usize)
+        -> Result<Vec<u8>, anyhow::Error>;
 }
 
 #[derive(Error, Debug)]
 pub enum SgnError {
     #[error("Assembler Engine failed.")]
-    AssemblerError(#[from] KeystoneError),
+    AssemblerError,
 }
 
-impl<T: GarbageJump + CallOver + SgnDecoderStub> SgnEncoder<T> {
-    pub fn new(seed: u8, assembler: T) -> Self {
-        SgnEncoder {
-            seed,
-            assembler
-        }
+impl<AsmType> SgnEncoder<AsmType>
+where
+    AsmType: GarbageJump + CallOver + SgnDecoderStub + AsmInit
+{
+    pub fn new(seed: u8) -> Self {
+        let assembler = AsmType::new();
+
+        Self { seed, assembler }
     }
 
     pub fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, anyhow::Error> {
         let mut data = payload.to_vec();
         additive_feedback_loop(&mut data, self.seed);
-
-        let mut full_binary = self.assembler.get_sgn_decoder_stub(data.len())?;
+        let mut full_binary = self.assembler.get_sgn_decoder_stub(self.seed, data.len())?;
         full_binary.extend(data.iter());
 
         Ok(full_binary)
-    }
-
-    fn generate_decoder_stub(&self, payload: &[u8]) -> Result<Vec<u8>, SgnError> {
-        let payload_size = payload.len();
-        let indexer_register = get_save_random_general_purpose_register(&[RCX_FULL]);
-        let seed_register =
-            get_save_random_general_purpose_register(&[RCX_FULL, indexer_register.clone()]);
-
-        todo!()
     }
 }
 

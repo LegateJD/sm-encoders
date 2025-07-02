@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-use crate::sgn::encoder::SgnError;
-use keystone_engine::{Arch, Keystone, Mode, OptionType, OptionValue};
+pub trait Encode {
+    fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, anyhow::Error>;
+}
 
-pub fn assemble(assembly: &str) -> Result<Vec<u8>, SgnError> {
-    let engine = Keystone::new(Arch::X86, Mode::MODE_64)?;
-    engine.option(OptionType::SYNTAX, OptionValue::SYNTAX_INTEL)?;
-    let result = engine.asm(assembly.to_string(), 0)?;
-
-    Ok(result.bytes)
+pub trait AsmInit {
+    fn new() -> Self;
 }

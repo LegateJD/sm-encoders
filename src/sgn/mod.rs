@@ -15,5 +15,4 @@
  */
 
 pub mod encoder;
-pub mod instructions;
-pub mod obfuscate;
+pub mod x64;

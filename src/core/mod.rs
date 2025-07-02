@@ -14,5 +14,5 @@
  * limitations under the License.
  */
 
-pub mod obfuscation;
+pub mod encoder;
 pub mod utils;
