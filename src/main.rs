@@ -30,6 +30,7 @@ pub mod xor_dynamic;
 pub mod x64_arch;
 pub mod schema;
 pub mod obfuscation;
+pub mod utils;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

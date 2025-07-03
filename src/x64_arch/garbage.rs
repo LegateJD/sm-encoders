@@ -17,7 +17,7 @@
 use dynasmrt::{dynasm, x64::X64Relocation, DynasmApi, DynasmLabelApi, VecAssembler};
 use rand::{seq::IndexedRandom, Rng};
 
-use crate::{core::utils::coin_flip, x64_arch::registers::get_random_general_purpose_register};
+use crate::{utils::randomization::coin_flip, x64_arch::registers::get_random_general_purpose_register};
 
 pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i32; 66] = [
     |assembler| {

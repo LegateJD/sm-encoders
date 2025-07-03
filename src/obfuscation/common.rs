@@ -15,9 +15,9 @@
  */
 
 pub trait GarbageJump {
-    fn get_jmp_over(&self, payload: &[u8]) -> Result<Vec<u8>, anyhow::Error>;
+    fn add_jmp_over(&self, payload: &[u8]) -> Vec<u8>;
 
-    fn generate_garbage_jump(&self) -> Result<Vec<u8>, anyhow::Error>;
+    fn generate_garbage_jump(&self) -> Vec<u8>;
 }
 
 pub trait GarbageAssembly {
@@ -25,9 +25,9 @@ pub trait GarbageAssembly {
 }
 
 pub trait CallOver {
-    fn add_call_over(&self, payload: Vec<u8>) -> Result<Vec<u8>, anyhow::Error>;
+    fn add_call_over(&self, payload: Vec<u8>) -> Vec<u8>;
 }
 
 pub trait GarbageInstructions {
-    fn generate_garbage_instructions(&self) -> Result<Vec<u8>, anyhow::Error>;
+    fn generate_garbage_instructions(&self) -> Vec<u8>;
 }

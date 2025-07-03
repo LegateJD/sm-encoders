@@ -14,8 +14,22 @@
  * limitations under the License.
  */
 
-pub trait Encode {
-    fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, anyhow::Error>;
+use std::error::Error;
+
+pub trait Encoder {
+    type Error: Sized + Error;
+
+    fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, Self::Error>;
+}
+
+pub trait DecoderStub<EncoderType>
+where
+    EncoderType: Encoder,
+{
+    type Error: Sized + Error;
+    type Parameters: Sized + Copy + Clone;
+
+    fn get_decoder_stub(&self, parameters: Self::Parameters) -> Result<Vec<u8>, Self::Error>;
 }
 
 pub trait AsmInit {

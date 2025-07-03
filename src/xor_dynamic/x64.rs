@@ -1,8 +1,8 @@
-use crate::{obfuscation::x64::X64CodeAssembler, xor_dynamic::encoder::XorDynamicStub};
-use dynasmrt::{dynasm, x64::X64Relocation, DynasmApi, DynasmLabelApi, VecAssembler};
+use crate::{obfuscation::x64::X64CodeAssembler, xor_dynamic::encoder::{XorDynamicEncoderError, XorDynamicStub}};
+use dynasmrt::{dynasm, x64::X64Relocation, DynasmApi, DynasmError, DynasmLabelApi, VecAssembler};
 
 impl XorDynamicStub for X64CodeAssembler {
-    fn get_decoder_stub(&self, payload_size: usize) -> Result<Vec<u8>, anyhow::Error> {
+    fn get_decoder_stub(&self) -> Result<Vec<u8>, XorDynamicEncoderError> {
         let mut assembler = VecAssembler::<X64Relocation>::new(0);
         dynasm!(assembler
             ; jmp BYTE >call_label
@@ -39,5 +39,11 @@ impl XorDynamicStub for X64CodeAssembler {
         let bytes = assembler.finalize()?;
 
         Ok(bytes)
+    }
+}
+
+impl From<DynasmError> for XorDynamicEncoderError {
+    fn from(value: DynasmError) -> Self {
+        XorDynamicEncoderError::AssemblerError
     }
 }
