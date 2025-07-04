@@ -14,74 +14,61 @@
  * limitations under the License.
  */
 
-use dynasmrt::{dynasm, x64::X64Relocation, DynasmApi, DynasmLabelApi, VecAssembler};
+use dynasmrt::{
+    dynasm, relocations::Relocation, x64::X64Relocation, x86::X86Relocation, DynasmApi,
+    DynasmLabelApi, VecAssembler,
+};
 use rand::{seq::IndexedRandom, Rng};
 
-use crate::{utils::randomization::coin_flip, x64_arch::registers::get_random_general_purpose_register};
+use crate::{
+    utils::randomization::coin_flip, x64_arch::registers::get_random_general_purpose_register,
+};
 
-pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i32; 66] = [
+pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>); 66] = [
     |assembler| {
         dynasm!(assembler
             ; nop
         );
-
-        return 1;
     },
     |assembler| {
         dynasm!(assembler
             ; cld
         );
-
-        return 1;
     },
     |assembler| {
         dynasm!(assembler
             ; clc
         );
-
-        return 1;
     },
     |assembler| {
         dynasm!(assembler
             ; cmc
         );
-
-        return 1;
     },
     |assembler| {
         dynasm!(assembler
             ; pause
         );
-
-        return 1;
     },
     |assembler| {
         dynasm!(assembler
             ; fnop
         );
-
-        return 1;
     },
     |assembler| {
         dynasm!(assembler
             ; fxam
         );
-
-        return 1;
     },
     |assembler| {
         dynasm!(assembler
             ; ftst
         );
-
-        return 1;
     },
     |assembler| {
         dynasm!(assembler
             ; jmp 2
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -90,8 +77,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; rol Rq(register_id), 0
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -100,8 +85,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; ror Rq(register_id), 0
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -110,8 +93,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; shl Rq(register_id), 0
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -120,8 +101,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; shr Rq(register_id), 0
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -130,8 +109,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; rcl Rq(register_id), 0
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -140,8 +117,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; rcr Rq(register_id), 0
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -150,8 +125,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; sal Rq(register_id), 0
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -160,8 +133,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; sar Rq(register_id), 0
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -170,8 +141,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; xor Rq(register_id), 0
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -180,8 +149,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; sub Rq(register_id), 0
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -190,8 +157,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; add Rq(register_id), 0
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -200,8 +165,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; and Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -210,8 +173,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; or Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -220,8 +181,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; bt Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -230,8 +189,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmp Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -240,8 +197,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; mov Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -250,8 +205,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; xchg Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -260,8 +213,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; test Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -270,8 +221,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmova Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -280,8 +229,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovb Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -290,8 +237,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovc Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -300,8 +245,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmove Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -310,8 +253,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovg Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -320,8 +261,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovl Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -330,8 +269,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovo Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -340,8 +277,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovp Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -350,8 +285,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovs Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -360,8 +293,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovz Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -370,8 +301,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovae Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -380,8 +309,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovge Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -390,8 +317,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovle Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -400,8 +325,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovna Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -410,8 +333,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovnb Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -420,8 +341,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovnc Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -430,8 +349,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovne Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -440,8 +357,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovng Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -450,8 +365,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovnl Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -460,8 +373,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovno Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -470,8 +381,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovnp Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -480,8 +389,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovns Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -490,8 +397,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovnz Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -500,8 +405,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovpe Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -510,8 +413,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovpo Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -520,8 +421,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovbe Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -530,8 +429,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovnae Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -540,8 +437,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovnbe Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -550,8 +445,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovnle Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -560,8 +453,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; cmovnge Rq(register_id), Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -575,8 +466,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -591,8 +480,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; not Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -607,8 +494,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; neg Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -623,8 +508,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; inc Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -639,8 +522,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; dec Rq(register_id)
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -657,8 +538,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; sub Rq(register_id), random_byte as i32
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -675,8 +554,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; add Rq(register_id), random_byte as i32
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -693,8 +570,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; rol Rq(register_id), random_byte as i8
         );
-
-        return 1;
     },
     |assembler| {
         let register = get_random_general_purpose_register();
@@ -711,12 +586,10 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>) -> i3
         dynasm!(assembler
             ; ror Rq(register_id), random_byte as i8
         );
-
-        return 1;
     },
 ];
 
-pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i32; 30] = [
+pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>); 30] = [
     |assembler| {
         let label = assembler.new_dynamic_label();
 
@@ -729,8 +602,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -744,8 +615,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -759,8 +628,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -774,8 +641,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -789,8 +654,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -804,8 +667,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -819,8 +680,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -834,8 +693,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -849,8 +706,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -864,8 +719,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -879,8 +732,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -894,8 +745,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -909,8 +758,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -924,8 +771,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -939,8 +784,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -954,8 +797,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -969,8 +810,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -984,8 +823,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -999,8 +836,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -1014,8 +849,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -1029,8 +862,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -1044,8 +875,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -1059,8 +888,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -1074,8 +901,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -1089,8 +914,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -1104,8 +927,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -1119,8 +940,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -1134,8 +953,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -1149,8 +966,6 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
     |assembler| {
         let label = assembler.new_dynamic_label();
@@ -1164,12 +979,18 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>) -> i
         dynasm!(assembler
             ; =>label
         );
-
-        return 1;
     },
 ];
 
-pub fn generate_garbage_assembly() -> Vec<u8> {
+pub fn generate_garbage_x64_assembly() -> Vec<u8> {
+    let mut assembler = VecAssembler::<X64Relocation>::new(0);
+    get_random_safe_assembly(&mut assembler);
+    let result = assembler.finalize().unwrap();
+
+    result
+}
+
+pub fn generate_garbage_x32_assembly() -> Vec<u8> {
     let mut assembler = VecAssembler::<X64Relocation>::new(0);
     get_random_safe_assembly(&mut assembler);
     let result = assembler.finalize().unwrap();
@@ -1188,8 +1009,7 @@ fn get_random_safe_assembly(assembler: &mut VecAssembler<X64Relocation>) {
         let add_garbage = SAFE_GARBAGE_INSTRUCTIONS.choose(&mut rng).unwrap();
         add_garbage(assembler);
     } else {
-        let add_garbage_jump = SAFE_GARBAGE_INSTRUCTIONS.choose(&mut rng).unwrap();
+        let add_garbage_jump = CONDITIONAL_JUMP_MNEMONICS.choose(&mut rng).unwrap();
         add_garbage_jump(assembler);
     }
 }
-

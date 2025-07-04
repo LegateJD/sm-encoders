@@ -5,6 +5,7 @@ impl XorDynamicStub for X64CodeAssembler {
     fn get_decoder_stub(&self) -> Result<Vec<u8>, XorDynamicEncoderError> {
         let mut assembler = VecAssembler::<X64Relocation>::new(0);
         dynasm!(assembler
+            ; .arch x64
             ; jmp BYTE >call_label
             ; ret_label:
             ; pop rbx

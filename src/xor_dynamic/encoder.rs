@@ -20,10 +20,12 @@ use thiserror::Error;
 
 use crate::{
     core::encoder::{AsmInit, Encoder},
-    obfuscation::x64::X64CodeAssembler,
+    obfuscation::{aarch64::AArch64CodeAssembler, x32::X32CodeAssembler, x64::X64CodeAssembler},
 };
 
 pub type XorDynamicEncoderX64 = XorDynamicEncoder<X64CodeAssembler>;
+pub type XorDynamicEncoderX32 = XorDynamicEncoder<X32CodeAssembler>;
+pub type XorDynamicEncoderAArch64 = XorDynamicEncoder<AArch64CodeAssembler>;
 
 #[derive(Debug)]
 pub struct XorDynamicEncoder<AsmType: XorDynamicStub> {
