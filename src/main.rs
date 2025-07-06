@@ -22,7 +22,7 @@ use std::{
 use clap::{arg, Parser, ValueEnum};
 use rand::Rng;
 
-use crate::{obfuscation::x64::X64CodeAssembler, sgn::encoder::{SgnEncoder, SgnEncoderX64}, xor_dynamic::encoder::XorDynamicEncoderX64};
+use crate::{core::encoder::Encoder, obfuscation::x64::X64CodeAssembler, sgn::encoder::{SgnEncoder, SgnEncoderX64}, xor_dynamic::encoder::XorDynamicEncoderX64};
 
 pub mod sgn;
 pub mod core;
@@ -30,6 +30,7 @@ pub mod xor_dynamic;
 pub mod x64_arch;
 pub mod schema;
 pub mod obfuscation;
+pub mod utils;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

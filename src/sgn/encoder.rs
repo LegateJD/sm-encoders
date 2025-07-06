@@ -14,47 +14,53 @@
  * limitations under the License.
  */
 
-use rand::Rng;
 use thiserror::Error;
 
 use crate::{
-    core::encoder::AsmInit,
+    core::encoder::{AsmInit, Encoder},
     obfuscation::{
         common::{CallOver, GarbageJump},
         x64::X64CodeAssembler,
     },
 };
 
+#[derive(Error, Debug)]
+pub enum ShikataGaNaiError {
+    #[error("AssemblerError")]
+    AssemblerError
+}
+
 pub type SgnEncoderX64 = SgnEncoder<X64CodeAssembler>;
 
 #[derive(Debug)]
-pub struct SgnEncoder<AsmType: GarbageJump + CallOver + SgnDecoderStub> {
+pub struct SgnEncoder<AsmType: SgnDecoderStub> {
     seed: u8,
     assembler: AsmType,
 }
 
 pub trait SgnDecoderStub {
     fn get_sgn_decoder_stub(&self, seed: u8, payload_size: usize)
-        -> Result<Vec<u8>, anyhow::Error>;
-}
-
-#[derive(Error, Debug)]
-pub enum SgnError {
-    #[error("Assembler Engine failed.")]
-    AssemblerError,
+        -> Result<Vec<u8>, ShikataGaNaiError>;
 }
 
 impl<AsmType> SgnEncoder<AsmType>
 where
-    AsmType: GarbageJump + CallOver + SgnDecoderStub + AsmInit
+    AsmType: SgnDecoderStub + AsmInit
 {
     pub fn new(seed: u8) -> Self {
         let assembler = AsmType::new();
 
         Self { seed, assembler }
     }
+}
 
-    pub fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, anyhow::Error> {
+impl<AsmType> Encoder for SgnEncoder<AsmType>
+where
+    AsmType: SgnDecoderStub + AsmInit,
+{
+    type Error = ShikataGaNaiError;
+
+    fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
         let mut data = payload.to_vec();
         additive_feedback_loop(&mut data, self.seed);
         let mut full_binary = self.assembler.get_sgn_decoder_stub(self.seed, data.len())?;

@@ -23,10 +23,17 @@ use rand::{
     distr::{Distribution, StandardUniform},
     Rng,
 };
+use thiserror::Error;
 
 use crate::{
-    core::encoder::Encode, obfuscation::{common::{CallOver, GarbageInstructions, GarbageJump}, x64::X64CodeAssembler}, sgn::encoder::SgnDecoderStub, x64_arch::registers::{get_save_random_general_purpose_register, RSP_FULL}
+    core::encoder::Encoder, obfuscation::{common::{CallOver, GarbageInstructions, GarbageJump}, x64::X64CodeAssembler}, sgn::encoder::SgnDecoderStub, x64_arch::registers::{get_save_random_general_purpose_register, RSP_FULL}
 };
+
+#[derive(Error, Debug)]
+pub enum SchemaEncoderError {
+    #[error("AssemblerError")]
+    AssemblerError
+}
 
 struct SchemaEncoder<
     T: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + SchemaDecoder,
@@ -34,9 +41,9 @@ struct SchemaEncoder<
     assembler: T,
 }
 
-struct Operation {
-    instruction: SchemaInstruction,
-    key: Option<[u8; 4]>,
+pub struct Operation {
+    pub(crate) instruction: SchemaInstruction,
+    pub(crate) key: Option<[u8; 4]>,
 }
 
 pub trait SchemaDecoder {
@@ -44,7 +51,7 @@ pub trait SchemaDecoder {
         &self,
         payload: Vec<u8>,
         schema: &Vec<Operation>,
-    ) -> Result<Vec<u8>, anyhow::Error>;
+    ) -> Result<Vec<u8>, SchemaEncoderError>;
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -84,24 +91,26 @@ impl Distribution<SchemaInstruction> for StandardUniform {
     }
 }
 
-impl<T: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + SchemaDecoder> Encode
-    for SchemaEncoder<T>
+impl<AsmType: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + SchemaDecoder> Encoder
+    for SchemaEncoder<AsmType>
 {
-    fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, anyhow::Error> {
-        let mut data = payload.to_vec();
+    fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
+        let mut bin = payload.to_vec();
 
-        let mut garbage = self.assembler.generate_garbage_instructions()?;
-        garbage.extend(data.iter());
+        let mut garbage = self.assembler.generate_garbage_instructions();
+        garbage.extend(bin.iter());
 
-        let schema_size = (garbage.len() - data.len()) / 8 + 1;
-        data = garbage;
+        let schema_size = (garbage.len() - bin.len()) / 8 + 1;
+        bin = garbage;
 
         let random_schema = new_cipher_schema(schema_size);
-        data = schema_cipher(data, &random_schema);
-        data = self.assembler.add_schema_decoder(data, &random_schema)?;
+        bin = schema_cipher(bin, &random_schema);
+        bin = self.assembler.add_schema_decoder(bin, &random_schema)?;
 
-        Ok(data)
+        Ok(bin)
     }
+    
+    type Error = SchemaEncoderError;
 }
 
 fn new_cipher_schema(size: usize) -> Vec<Operation> {
@@ -165,93 +174,4 @@ fn schema_cipher(mut payload: Vec<u8>, schema: &Vec<Operation>) -> Vec<u8> {
     }
 
     payload
-}
-
-impl SchemaDecoder for X64CodeAssembler {
-    fn add_schema_decoder(
-        &self,
-        mut payload: Vec<u8>,
-        schema: &Vec<Operation>,
-    ) -> Result<Vec<u8>, anyhow::Error> {
-        let mut assembler = VecAssembler::<X64Relocation>::new(0);
-
-        let mut garbage = self.generate_garbage_instructions()?;
-        let mut index = garbage.len() as i32;
-        garbage.extend(payload.into_iter());
-        payload = garbage;
-
-        payload = self.add_call_over(payload)?;
-        garbage = self.generate_garbage_instructions()?;
-        payload.extend(garbage.into_iter());
-
-        let reg = get_save_random_general_purpose_register(&[RSP_FULL]);
-        let indexer_register_id = reg.quad as u8;
-        dynasm!(assembler
-            ; pop Rq(indexer_register_id)
-        );
-        let pop = assembler.finalize()?;
-        payload.extend(pop.into_iter());
-
-        for operation in schema {
-            garbage = self.generate_garbage_instructions()?;
-            payload.extend(garbage.into_iter());
-            assembler = VecAssembler::<X64Relocation>::new(0);
-
-            match operation.key {
-                Some(k) => {
-                    match operation.instruction {
-                        SchemaInstruction::XOR => {
-                            dynasm!(assembler
-                                ; xor DWORD [Rq(indexer_register_id) + index], BigEndian::read_u32(&k) as i32
-                            );
-                        }
-                        SchemaInstruction::SUB => {
-                            dynasm!(assembler
-                                ; sub DWORD [Rq(indexer_register_id) + index], BigEndian::read_u32(&k) as i32
-                            );
-                        }
-                        SchemaInstruction::ADD => {
-                            dynasm!(assembler
-                                ; add DWORD [Rq(indexer_register_id) + index], BigEndian::read_u32(&k) as i32
-                            );
-                        }
-                        SchemaInstruction::ROL => {
-                            dynasm!(assembler
-                                ; rol DWORD [Rq(indexer_register_id) + index], BigEndian::read_u32(&k) as i8
-                            );
-                        }
-                        SchemaInstruction::ROR => {
-                            dynasm!(assembler
-                                ; ror DWORD [Rq(indexer_register_id) + index], BigEndian::read_u32(&k) as i8
-                            );
-                        }
-                        _ => unreachable!(),
-                    }
-                    dynasm!(assembler
-                        ; xor DWORD [Rq(indexer_register_id) + index], BigEndian::read_u32(&k) as i32
-                    );
-                }
-                None => {
-                    dynasm!(assembler
-                        ; not DWORD [Rq(indexer_register_id) + index]
-                    );
-                }
-            };
-
-            let decipher_step = assembler.finalize()?;
-            payload.extend(decipher_step.into_iter());
-
-            index += 4;
-        }
-
-        assembler = VecAssembler::<X64Relocation>::new(0);
-        dynasm!(assembler
-            ; jmp Rq(indexer_register_id)
-        );
-
-        let return_instruction = assembler.finalize()?;
-        payload.extend(return_instruction.into_iter());
-
-        Ok(payload)
-    }
 }

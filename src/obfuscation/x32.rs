@@ -16,19 +16,17 @@
 
 use rand::RngCore;
 
-use crate::{
-    core::encoder::AsmInit, obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump}, utils::randomization::coin_flip, x64_arch::garbage::generate_garbage_x64_assembly
-};
+use crate::{core::encoder::AsmInit, obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump}, utils::randomization::coin_flip, x64_arch::garbage::generate_garbage_x32_assembly};
 
-pub struct X64CodeAssembler {}
+pub struct X32CodeAssembler {}
 
-impl AsmInit for X64CodeAssembler {
+impl AsmInit for X32CodeAssembler {
     fn new() -> Self {
-        X64CodeAssembler {  }
+        X32CodeAssembler {  }
     }
 }
 
-impl GarbageJump for X64CodeAssembler {
+impl GarbageJump for X32CodeAssembler {
     fn add_jmp_over(&self, payload: &[u8]) -> Vec<u8> {
         let len = payload.len() as i32 + 2;
         let mut bin = vec![0xE9u8];
@@ -48,7 +46,7 @@ impl GarbageJump for X64CodeAssembler {
     }
 }
 
-impl CallOver for X64CodeAssembler {
+impl CallOver for X32CodeAssembler {
     fn add_call_over(&self, payload: Vec<u8>) -> Vec<u8> {
         let len = payload.len() as i32 + 5;
         let mut bin = vec![0xE8u8];
@@ -58,7 +56,7 @@ impl CallOver for X64CodeAssembler {
     }
 }
 
-impl GarbageInstructions for X64CodeAssembler {
+impl GarbageInstructions for X32CodeAssembler {
     fn generate_garbage_instructions(&self) -> Vec<u8> {
         let mut garbage_bin = self.generate_garbage_assembly();
 
@@ -77,8 +75,8 @@ impl GarbageInstructions for X64CodeAssembler {
     }
 }
 
-impl GarbageAssembly for X64CodeAssembler {
+impl GarbageAssembly for X32CodeAssembler {
     fn generate_garbage_assembly(&self) -> Vec<u8> {
-        generate_garbage_x64_assembly()
+        generate_garbage_x32_assembly()
     }
 }

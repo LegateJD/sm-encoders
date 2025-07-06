@@ -14,116 +14,101 @@
  * limitations under the License.
  */
 
-use std::{collections::HashSet, str::FromStr};
-
-use anyhow::anyhow;
+use std::{collections::HashSet};
+use rand::seq::SliceRandom;
 use thiserror::Error;
 
-use crate::{core::encoder::AsmInit, obfuscation::x64::X64CodeAssembler};
+use crate::{
+    core::encoder::{AsmInit, Encoder},
+    obfuscation::{aarch64::AArch64CodeAssembler, x32::X32CodeAssembler, x64::X64CodeAssembler},
+};
 
 pub type XorDynamicEncoderX64 = XorDynamicEncoder<X64CodeAssembler>;
+pub type XorDynamicEncoderX32 = XorDynamicEncoder<X32CodeAssembler>;
+pub type XorDynamicEncoderAArch64 = XorDynamicEncoder<AArch64CodeAssembler>;
 
 #[derive(Debug)]
 pub struct XorDynamicEncoder<AsmType: XorDynamicStub> {
     assembler: AsmType,
-    name: String,
     stub_key_term: Vec<u8>,
     stub_payload_term: Vec<u8>,
     badchars: HashSet<u8>,
 }
 
 #[derive(Error, Debug)]
-pub enum EncoderError {
+pub enum XorDynamicEncoderError {
     #[error("BadCharacters")]
     BadCharacters,
+    #[error("AssemblerError")]
+    AssemblerError,
+    #[error("NonExistentKey")]
+    NonExistentKey,
+    #[error("Key terminator could not be found for the xor dynamic encoder.")]
+    NonExistentKeyTerminator,
+    #[error("Payload terminator could not be found for the xor dynamic encoder.")]
+    NonExistentPayloadTerminator,
 }
 
 pub trait XorDynamicStub {
-    fn get_decoder_stub(&self, payload_size: usize) -> Result<Vec<u8>, anyhow::Error>;
+    fn get_decoder_stub(&self) -> Result<Vec<u8>, XorDynamicEncoderError>;
 }
 
 pub fn generate_key(
     buf: &[u8],
     badchars: &HashSet<u8>,
     key_chars: &[u8],
-) -> Result<Vec<u8>, anyhow::Error> {
+) -> Result<Vec<u8>, XorDynamicEncoderError> {
     let buf_len = buf.len();
-
-    let mut min_len = {
-        let mut val = (buf_len as f64 / 100.0 * (0.2 + 0.05 * badchars.len() as f64)) as usize;
-        if val < 1 {
-            val = 1;
-        }
-        val
+    let min_len = {
+        let pct = 0.2 + 0.05 * badchars.len() as f64;
+        let val = (buf_len as f64 * pct / 100.0) as usize;
+        val.max(1).min(buf_len)
     };
 
-    let mut max_len = buf_len;
-    if min_len > max_len || min_len == usize::MAX {
-        min_len = max_len;
-    }
-
-    let mut key_increment = {
-        let mut val = (buf_len as f64 / 100.0 * (0.01 + 0.001 * badchars.len() as f64)) as usize;
-        if val < 1 {
-            val = 1;
-        }
-        val
+    let max_len = buf_len;
+    let key_increment = {
+        let pct = 0.01 + 0.001 * badchars.len() as f64;
+        let val = (buf_len as f64 * pct / 100.0) as usize;
+        val.max(1)
     };
 
     let mut key_len = min_len;
-    while key_len <= max_len + key_increment {
-        if key_len > max_len {
-            key_len = max_len;
-        }
 
-        let mut my_key: Vec<u8> = Vec::new();
+    while key_len <= max_len {
+        let capped_key_len = key_len.min(max_len);
+        let mut key = Vec::with_capacity(capped_key_len);
 
-        for x in 0..key_len {
-            let mut found_char = None;
+        for x in 0..capped_key_len {
+            let valid_char = key_chars.iter().copied().find(|&candidate| {
+                (0..)
+                    .map(|i| i * capped_key_len + x)
+                    .take_while(|&pos| pos < buf_len)
+                    .all(|pos| !badchars.contains(&(buf[pos] ^ candidate)))
+            });
 
-            for &j in key_chars {
-                let mut ok = true;
-
-                let mut i = 0;
-                while i + x < buf_len {
-                    let b = buf[i + x] ^ j;
-                    if badchars.contains(&b) {
-                        ok = false;
-                        break;
-                    }
-                    i += key_len;
-                }
-
-                if ok {
-                    found_char = Some(j);
-                    break;
-                }
-            }
-
-            if let Some(c) = found_char {
-                my_key.push(c);
+            if let Some(c) = valid_char {
+                key.push(c);
             } else {
                 break;
             }
         }
 
-        if my_key.len() == key_len {
-            return Ok(my_key);
+        if key.len() == capped_key_len {
+            return Ok(key);
         }
 
         key_len += key_increment;
     }
 
-    todo!()
+    Err(XorDynamicEncoderError::NonExistentKey)
 }
 
 impl<AsmType> XorDynamicEncoder<AsmType>
 where
-    AsmType: XorDynamicStub + AsmInit
+    AsmType: XorDynamicStub + AsmInit,
 {
     pub fn new(seed: u8) -> Self {
         let assembler = AsmType::new();
-        let name = String::from_str("xor dynamic").unwrap();
         let stub_key_term = vec![0x41];
         let stub_payload_term = vec![0x42, 0x42];
         let mut badchars = HashSet::new();
@@ -131,12 +116,22 @@ where
         badchars.insert(0x0a);
         badchars.insert(0x0d);
 
-        Self { assembler, name, stub_key_term, stub_payload_term, badchars }
+        Self {
+            assembler,
+            stub_key_term,
+            stub_payload_term,
+            badchars,
+        }
     }
+}
 
-    pub fn encode(&self, buf: &[u8]) -> Result<Vec<u8>, anyhow::Error> {
-        let mut badchars = self.badchars.clone();
-        let mut stub = self.assembler.get_decoder_stub(buf.len())?;
+impl<AsmType> Encoder for XorDynamicEncoder<AsmType>
+where
+    AsmType: XorDynamicStub + AsmInit,
+{
+    fn encode(&self, buf: &[u8]) -> Result<Vec<u8>, Self::Error> {
+        let badchars = self.badchars.clone();
+        let stub = self.assembler.get_decoder_stub()?;
 
         let stub_without_terms = stub
             .windows(self.stub_key_term.len())
@@ -151,70 +146,26 @@ where
             .concat();
 
         if has_badchars(&stub_cleaned, &badchars) {
-            return Err(EncoderError::BadCharacters.into());
+            return Err(XorDynamicEncoderError::BadCharacters);
         }
 
         let key_chars: Vec<u8> = (1u8..=255).filter(|c| !badchars.contains(c)).collect();
-
         let key = generate_key(buf, &badchars, &key_chars)?;
+        let key_term = generate_key_terminator(&key, &key_chars)?;
 
-        let mut key_term = None;
-        let mut rng = rand::thread_rng();
-        use rand::seq::SliceRandom;
+        let mut encoded: Vec<u8> = Vec::with_capacity(buf.len());
 
-        let mut shuffled = key_chars.clone();
-        shuffled.shuffle(&mut rng);
-
-        for &i in &shuffled {
-            if !key.contains(&i) {
-                key_term = Some(i);
-                break;
-            }
-        }
-
-        let key_term = key_term.ok_or_else(|| {
-            anyhow!(
-                "Key terminator could not be found for the {} encoder.",
-                self.name
-            )
-        })?;
-
-        let mut encoded: Vec<u8> = Vec::new();
         for (pos, &b) in buf.iter().enumerate() {
             encoded.push(b ^ key[pos % key.len()]);
         }
 
-        let mut payload_term = None;
-
-        let mut outer = shuffled.clone();
-        outer.shuffle(&mut rng);
-
-        'outer: for &i in &outer {
-            let mut inner = shuffled.clone();
-            inner.shuffle(&mut rng);
-
-            for &j in &inner {
-                let pair = vec![i, j];
-                if !find_subsequence(&encoded, &pair) {
-                    payload_term = Some(pair);
-                    break 'outer;
-                }
-            }
-        }
-
-        let payload_term = payload_term.ok_or_else(|| {
-            anyhow!(
-                "Payload terminator could not be found for the {} encoder.",
-                self.name
-            )
-        })?;
+        let payload_term = generate_payload_terminator(&encoded, &key_chars)?;
 
         let mut final_payload = Vec::new();
 
         let mut stub_replaced = stub.clone();
         stub_replaced = replace_subsequence(&stub_replaced, &self.stub_key_term, &[key_term]);
         stub_replaced = replace_subsequence(&stub_replaced, &self.stub_payload_term, &payload_term);
-
         final_payload.extend_from_slice(&stub_replaced);
         final_payload.extend_from_slice(&key);
         final_payload.push(key_term);
@@ -222,11 +173,46 @@ where
         final_payload.extend_from_slice(&payload_term);
 
         if has_badchars(&final_payload, &badchars) {
-            return Err(EncoderError::BadCharacters.into());
+            return Err(XorDynamicEncoderError::BadCharacters);
         }
 
         Ok(final_payload)
     }
+
+    type Error = XorDynamicEncoderError;
+}
+
+fn generate_key_terminator(key: &[u8], key_chars: &[u8]) -> Result<u8, XorDynamicEncoderError> {
+    let mut rng = rand::rng();
+    let mut shuffled: Vec<u8> = key_chars.to_vec();
+    shuffled.shuffle(&mut rng);
+
+    shuffled
+        .into_iter()
+        .find(|&c| !key.contains(&c))
+        .ok_or(XorDynamicEncoderError::NonExistentKeyTerminator)
+}
+
+fn generate_payload_terminator(encoded: &[u8], key_chars: &[u8]) -> Result<Vec<u8>, XorDynamicEncoderError> {
+    let mut rng = rand::rng();
+    let mut pairs: Vec<(u8, u8)> = key_chars
+        .iter()
+        .flat_map(|&i| key_chars.iter().map(move |&j| (i, j)))
+        .collect();
+
+    pairs.shuffle(&mut rng);
+
+    pairs
+        .into_iter()
+        .find_map(|(i, j)| {
+            let pair = [i, j];
+            if !find_subsequence(encoded, &pair) {
+                Some(pair.to_vec())
+            } else {
+                None
+            }
+        })
+        .ok_or(XorDynamicEncoderError::NonExistentPayloadTerminator)
 }
 
 fn has_badchars(buf: &[u8], badchars: &HashSet<u8>) -> bool {
@@ -248,6 +234,7 @@ fn replace_subsequence(haystack: &[u8], needle: &[u8], replacement: &[u8]) -> Ve
     }
 
     result.extend_from_slice(&haystack[i..]);
+
     result
 }
 
