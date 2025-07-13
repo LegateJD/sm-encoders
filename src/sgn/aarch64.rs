@@ -29,24 +29,49 @@ impl SgnDecoderStub for AArch64CodeAssembler {
         let indexer_register = get_random_general_purpose_register();
         let seed_register =
             get_safe_random_general_purpose_register(&[indexer_register.clone()]);
-        let indexer_register_id = indexer_register.x as u8;
-        let seed_register_id = seed_register.x as u8;
+        let payload_register =
+            get_safe_random_general_purpose_register(&[indexer_register.clone(), seed_register.clone()]);
+        let xor_result_register =
+            get_safe_random_general_purpose_register(&[indexer_register.clone(), seed_register.clone(), payload_register.clone()]);
+        let add_result_register =
+            get_safe_random_general_purpose_register(&[indexer_register.clone(), seed_register.clone(), payload_register.clone(), xor_result_register.clone()]);
+        let indexer_register_id = indexer_register.x as u32;
+        let seed_register_id = seed_register.x as u32;
+        let payload_siez_register_id = payload_register.x as u32;
+        let xor_result_register_register_id = xor_result_register.x as u32;
+        let add_result_register_register_id = xor_result_register.x as u32;
 
         dynasm!(assembler
+            ; .arch aarch64
+            ; mov W(seed_register_id), seed as u32
+            ; mov X(payload_siez_register_id), payload_size as u64
+            ; adr X(indexer_register_id), >_data_sub1
+            ; eor W(xor_result_register_register_id), W(xor_result_register_register_id), W(seed_register_id)
+            ; strb W(xor_result_register_register_id), [X(indexer_register_id), X(payload_siez_register_id)]
+            ; ldrb W(add_result_register_register_id), [X(indexer_register_id), X(payload_siez_register_id)]
+            ; add W(seed_register_id), W(seed_register_id), W(add_result_register_register_id)
+            ; subs X(payload_siez_register_id), XSP(payload_siez_register_id), 1
+            ; b.ne >_decode
+            ; _decode:
+            ; ldrb W(xor_result_register_register_id), [X(indexer_register_id), X(payload_siez_register_id)]
+            ; _data_sub1:
+        );
+
+        /*dynasm!(assembler
             ; .arch aarch64
             ; mov w3, seed as u32
             ; mov x2, payload_size as u64
             ; adr x1, >_data_sub1
             ; eor w4, w4, w3
             ; strb w4, [x1, x2]
-            ; ldrb w5, [x1, x2] 
+            ; ldrb w5, [x1, x2]
             ; add w3, w3, w5
-            ; subs x2, x2, 1 
+            ; subs x2, x2, 1
             ; b.ne >_decode
             ; _decode:
-            ; ldrb w4, [x1, x2] 
+            ; ldrb w4, [x1, x2]
             ; _data_sub1:
-        );
+        );*/
 
         let bytes = assembler.finalize()?;
 
