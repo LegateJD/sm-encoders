@@ -28,9 +28,11 @@ impl AsmInit for AArch64CodeAssembler {
 
 impl GarbageJump for AArch64CodeAssembler {
     fn add_jmp_over(&self, payload: &[u8]) -> Vec<u8> {
-        let len = payload.len() as i32 + 2;
-        let mut bin = vec![0xE9u8];
-        bin.extend(len.to_le_bytes());
+        let words = (payload.len() + 3) / 4 + 1;
+        let imm26 = (words & 0x3FFFFFF) as u32;
+        let instruction = 0x14000000 | imm26;
+        let mut bin = Vec::with_capacity(4);
+        bin.extend_from_slice(&instruction.to_le_bytes());
 
         bin
     }
