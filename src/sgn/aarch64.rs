@@ -39,7 +39,7 @@ impl SgnDecoderStub for AArch64CodeAssembler {
         let seed_register_id = seed_register.x as u32;
         let payload_siez_register_id = payload_register.x as u32;
         let xor_result_register_register_id = xor_result_register.x as u32;
-        let add_result_register_register_id = xor_result_register.x as u32;
+        let add_result_register_register_id = add_result_register.x as u32;
 
         dynasm!(assembler
             ; .arch aarch64
