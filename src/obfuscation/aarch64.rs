@@ -33,13 +33,12 @@ impl GarbageJump for AArch64CodeAssembler {
         let instruction = 0x14000000 | imm26;
         let mut bin = Vec::with_capacity(4);
         bin.extend_from_slice(&instruction.to_le_bytes());
-
         bin
     }
 
     fn generate_garbage_jump(&self) -> Vec<u8> {
         let mut rng = rand::rng();
-        let mut random_bytes = [0; 10];
+        let mut random_bytes = [0; 12];
         rng.fill_bytes(&mut random_bytes);
         let mut final_bin = self.add_jmp_over(&random_bytes);
         final_bin.extend(random_bytes);
@@ -50,9 +49,13 @@ impl GarbageJump for AArch64CodeAssembler {
 
 impl CallOver for AArch64CodeAssembler {
     fn add_call_over(&self, payload: Vec<u8>) -> Vec<u8> {
-        let len = payload.len() as i32 + 5;
-        let mut bin = vec![0xE8u8];
-        bin.extend(len.to_le_bytes());
+        let words = ((payload.len() + 3) / 4) + 2;
+
+        let imm24 = (words & 0x00FFFFFF) as u32;
+        let instruction = 0xEB000000 | imm24;
+
+        let mut bin = Vec::with_capacity(4);
+        bin.extend_from_slice(&instruction.to_le_bytes());
 
         bin
     }
