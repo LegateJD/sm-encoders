@@ -3,14 +3,37 @@ use dynasmrt::{
     DynasmLabelApi, VecAssembler,
 };
 use rand::{seq::IndexedRandom, Rng};
-use crate::arm64::registers::get_random_general_purpose_register;
+use crate::arm64::registers::{get_random_general_purpose_register, get_safe_random_general_purpose_register};
 
-pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 18] = [
+pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 24] = [
     |assembler| {
         dynasm!(assembler
+            ; .arch aarch64
             ; nop
         );
     },
+    |assembler| {
+        dynasm!(assembler
+            ; .arch aarch64
+            ; msr nzcv, xzr
+        );
+    },
+    |assembler| {
+        dynasm!(assembler
+            ; .arch aarch64
+            ; mrs x0, nzcv
+            ; eor x0, x0, #0x20000000  // Toggle carry bit
+            ; msr nzcv, x0
+        );
+    },
+    |assembler| {
+        dynasm!(assembler
+            ; .arch aarch64
+            ; yield
+        );
+    },
+
+
     |assembler| {
         dynasm!(assembler
             ; .arch aarch64
@@ -24,6 +47,19 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
         dynasm!(assembler
             ; .arch aarch64
             ; mov X(register_id), X(register_id)
+        );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let second_register =
+            get_safe_random_general_purpose_register(&[register.clone()]);
+        let register_id = register.x as u32;
+        let second_register_id = second_register.x as u32;
+
+        dynasm!(assembler
+            ; .arch aarch64
+            ; mov X(second_register_id), X(register_id)
+            ; mov X(register_id), X(second_register_id)
         );
     },
     |assembler| {
@@ -134,6 +170,21 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; tst X(register_id), X(register_id)
         );
     },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        dynasm!(assembler
+            ; .arch aarch64
+            ; csel x(register.id), x(register.id), x(register.id), eq
+        );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        dynasm!(assembler
+            ; .arch aarch64
+            ; csel x(register.id), x(register.id), x(register.id), ne
+        );
+    },
+
     |assembler| {
         let register = get_random_general_purpose_register();
         let register_id = register.x as u32;
