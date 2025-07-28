@@ -21,7 +21,7 @@ use dynasmrt::{
 use rand::{seq::IndexedRandom, Rng};
 use crate::arm64::registers::{get_random_general_purpose_register, get_safe_random_general_purpose_register};
 
-pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 24] = [
+pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 47] = [
     |assembler| {
         dynasm!(assembler
             ; .arch aarch64
@@ -241,4 +241,199 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; rev X(register_id), X(register_id)
         );
     },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+            ; .arch aarch64
+            ; csel x(register_id), x(register_id), x(register_id), hi
+        );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+            ; .arch aarch64
+            ; csel x(register_id), x(register_id), x(register_id), lo
+        );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+            ; .arch aarch64
+            ; csel x(register_id), x(register_id), x(register_id), cs
+        );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+            ; .arch aarch64
+            ; csel x(register_id), x(register_id), x(register_id), eq
+        );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+            ; .arch aarch64
+            ; csel x(register_id), x(register_id), x(register_id), gt
+        );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+            ; .arch aarch64
+            ; csel x(register_id), x(register_id), x(register_id), lt
+        );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+            ; .arch aarch64
+            ; csel x(register_id), x(register_id), x(register_id), vs
+        );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+            ; .arch aarch64
+            ; csel x(register_id), x(register_id), x(register_id), mi
+        );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+            ; .arch aarch64
+            ; csel x(register_id), x(register_id), x(register_id), eq
+        );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+            ; .arch aarch64
+            ; csel x(register_id), x(register_id), x(register_id), hs
+        );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+        ; csel x(register_id), x(register_id), x(register_id), ge  // cmovge -> greater or equal
+    );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+        ; csel x(register_id), x(register_id), x(register_id), le  // cmovle -> less or equal
+    );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+        ; csel x(register_id), x(register_id), x(register_id), ls  // cmovna -> lower or same
+    );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+        ; csel x(register_id), x(register_id), x(register_id), hs  // cmovnb -> higher or same
+    );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+        ; csel x(register_id), x(register_id), x(register_id), cc  // cmovnc -> carry clear
+    );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+        ; csel x(register_id), x(register_id), x(register_id), ne  // cmovne -> not equal
+    );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+        ; csel x(register_id), x(register_id), x(register_id), le  // cmovng -> less or equal
+    );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+        ; csel x(register_id), x(register_id), x(register_id), ge  // cmovnl -> greater or equal
+    );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+        ; csel x(register_id), x(register_id), x(register_id), vc  // cmovno -> no overflow
+    );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+        ; csel x(register_id), x(register_id), x(register_id), pl  // cmovns -> plus/positive
+    );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+        ; csel x(register_id), x(register_id), x(register_id), ne  // cmovnz -> not equal
+    );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+        ; csel x(register_id), x(register_id), x(register_id), hi  // cmovnbe -> higher
+    );
+    },
+    |assembler| {
+        let register = get_random_general_purpose_register();
+        let register_id = register.quad as u8;
+
+        dynasm!(assembler
+        ; csel x(register_id), x(register_id), x(register_id), gt  // cmovnle -> greater than
+    );
+    },
+
 ];
