@@ -23,6 +23,8 @@ use crate::{
         x64::X64CodeAssembler,
     },
 };
+use crate::obfuscation::aarch64::AArch64CodeAssembler;
+use crate::obfuscation::x32::X32CodeAssembler;
 
 #[derive(Error, Debug)]
 pub enum ShikataGaNaiError {
@@ -31,6 +33,10 @@ pub enum ShikataGaNaiError {
 }
 
 pub type SgnEncoderX64 = SgnEncoder<X64CodeAssembler>;
+
+pub type SgnEncoderX32 = SgnEncoder<X32CodeAssembler>;
+
+pub type SgnEncoderAArch64 = SgnEncoder<AArch64CodeAssembler>;
 
 #[derive(Debug)]
 pub struct SgnEncoder<AsmType: SgnDecoderStub> {

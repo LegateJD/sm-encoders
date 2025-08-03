@@ -164,7 +164,7 @@ pub fn get_safe_random_general_purpose_register(excludes: &[Arm64Register]) -> &
 }
 
 impl Arm64Register {
-    pub fn is_parameter_register(&self) -> bool {
+    /*pub fn is_parameter_register(&self) -> bool {
         matches!(self.x, XRegister::X0..=XRegister::X7)
     }
 
@@ -174,7 +174,7 @@ impl Arm64Register {
 
     pub fn is_caller_saved(&self) -> bool {
         matches!(self.x, XRegister::X0..=XRegister::X17)
-    }
+    }*/
 
     pub fn is_special_purpose(&self) -> bool {
         matches!(self.x,

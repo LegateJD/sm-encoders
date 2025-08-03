@@ -28,6 +28,16 @@ use thiserror::Error;
 use crate::{
     core::encoder::Encoder, obfuscation::{common::{CallOver, GarbageInstructions, GarbageJump}, x64::X64CodeAssembler}, sgn::encoder::SgnDecoderStub, x64_arch::registers::{get_save_random_general_purpose_register, RSP_FULL}
 };
+use crate::core::encoder::AsmInit;
+use crate::obfuscation::aarch64::AArch64CodeAssembler;
+use crate::obfuscation::x32::X32CodeAssembler;
+use crate::sgn::encoder::SgnEncoder;
+
+pub type SchemaEncoderX64 = SchemaEncoder<X64CodeAssembler>;
+
+pub type SchemaEncoderX32 = SchemaEncoder<X32CodeAssembler>;
+
+pub type SchemaEncoderAArch64 = SchemaEncoder<AArch64CodeAssembler>;
 
 #[derive(Error, Debug)]
 pub enum SchemaEncoderError {
@@ -35,8 +45,8 @@ pub enum SchemaEncoderError {
     AssemblerError
 }
 
-struct SchemaEncoder<
-    T: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + SchemaDecoder,
+pub struct SchemaEncoder<
+    T: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + SchemaDecoderStub,
 > {
     assembler: T,
 }
@@ -46,7 +56,7 @@ pub struct Operation {
     pub(crate) key: Option<[u8; 4]>,
 }
 
-pub trait SchemaDecoder {
+pub trait SchemaDecoderStub {
     fn add_schema_decoder(
         &self,
         payload: Vec<u8>,
@@ -62,6 +72,17 @@ pub enum SchemaInstruction {
     ROL,
     ROR,
     NOT,
+}
+
+impl<AsmType> SchemaEncoder<AsmType>
+where
+    AsmType: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + SchemaDecoderStub + AsmInit
+{
+    pub fn new(seed: u8) -> Self {
+        let assembler = AsmType::new();
+
+        Self { assembler }
+    }
 }
 
 impl fmt::Display for SchemaInstruction {
@@ -91,7 +112,7 @@ impl Distribution<SchemaInstruction> for StandardUniform {
     }
 }
 
-impl<AsmType: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + SchemaDecoder> Encoder
+impl<AsmType: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + SchemaDecoderStub> Encoder
     for SchemaEncoder<AsmType>
 {
     fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
