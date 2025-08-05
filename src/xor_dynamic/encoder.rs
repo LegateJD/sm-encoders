@@ -24,7 +24,9 @@ use crate::{
 };
 
 pub type XorDynamicEncoderX64 = XorDynamicEncoder<X64CodeAssembler>;
+
 pub type XorDynamicEncoderX32 = XorDynamicEncoder<X32CodeAssembler>;
+
 pub type XorDynamicEncoderAArch64 = XorDynamicEncoder<AArch64CodeAssembler>;
 
 #[derive(Debug)]

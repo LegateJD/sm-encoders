@@ -23,15 +23,16 @@ use clap::{arg, Parser, ValueEnum};
 use rand::Rng;
 
 use crate::{core::encoder::Encoder, obfuscation::x64::X64CodeAssembler, sgn::encoder::{SgnEncoder, SgnEncoderX64}, xor_dynamic::encoder::XorDynamicEncoderX64};
+use crate::schema::encoder::SchemaEncoderX64;
 
 pub mod sgn;
 pub mod core;
 pub mod xor_dynamic;
 pub mod x64_arch;
 pub mod schema;
+pub mod arm64;
 pub mod obfuscation;
 pub mod utils;
-
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -50,6 +51,7 @@ struct Args {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 enum EncoderType {
     Sgn,
+    Schema,
     XorDynamic,
 }
 
@@ -67,6 +69,7 @@ fn encode() -> Result<(), String> {
 
     let sgn_encoder = SgnEncoderX64::new(seed);
     let xor_dynamic_encoder = XorDynamicEncoderX64::new(seed);
+    let schema_encoder = SchemaEncoderX64::new(seed);
 
     let mut input_file = File::open(&args.input).map_err(|x| x.to_string())?;
     input_file
@@ -76,6 +79,7 @@ fn encode() -> Result<(), String> {
     let encoded = match args.encoder_type {
         EncoderType::Sgn => sgn_encoder.encode(&buf).map_err(|x| x.to_string())?,
         EncoderType::XorDynamic => xor_dynamic_encoder.encode(&buf).map_err(|x| x.to_string())?,
+        EncoderType::Schema => schema_encoder.encode(&buf).map_err(|x| x.to_string())?,
     };
 
     let mut output_file = File::create(&args.output).map_err(|x| x.to_string())?;
