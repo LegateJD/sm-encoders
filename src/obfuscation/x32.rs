@@ -51,6 +51,7 @@ impl CallOver for X32CodeAssembler {
         let len = payload.len() as i32 + 5;
         let mut bin = vec![0xE8u8];
         bin.extend(len.to_le_bytes());
+        bin.extend(payload);
 
         bin
     }

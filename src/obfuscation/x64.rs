@@ -30,7 +30,7 @@ impl AsmInit for X64CodeAssembler {
 
 impl GarbageJump for X64CodeAssembler {
     fn add_jmp_over(&self, payload: &[u8]) -> Vec<u8> {
-        let len = payload.len() as i32 + 2;
+        let len = payload.len() as i32;
         let mut bin = vec![0xE9u8];
         bin.extend(len.to_le_bytes());
 
@@ -44,6 +44,12 @@ impl GarbageJump for X64CodeAssembler {
         let mut final_bin = self.add_jmp_over(&random_bytes);
         final_bin.extend(random_bytes);
 
+        println!("Hexadecimal representation:");
+        for byte in &final_bin {
+            print!("{:02x} ", byte);
+        }
+        println!("\n");
+
         final_bin
     }
 }
@@ -53,6 +59,7 @@ impl CallOver for X64CodeAssembler {
         let len = payload.len() as i32 + 5;
         let mut bin = vec![0xE8u8];
         bin.extend(len.to_le_bytes());
+        bin.extend(payload);
 
         bin
     }

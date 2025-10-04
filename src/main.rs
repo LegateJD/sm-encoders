@@ -16,7 +16,7 @@
 
 use std::{
     fs::File,
-    io::{Read, Write},
+    io::{Read, Write}
 };
 
 use clap::{arg, Parser, ValueEnum};
@@ -63,7 +63,12 @@ fn main() {
 }
 
 fn encode() -> Result<(), String> {
-    let args = Args::parse();
+    //let args = Args::parse();
+    let args = Args {
+        input: "input.bin".into(),
+        output: "output.bin".into(),
+        encoder_type: EncoderType::Schema
+    };
     let mut buf = vec![];
     let seed: u8 = rand::rng().random();
 
