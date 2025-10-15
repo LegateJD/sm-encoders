@@ -48,7 +48,7 @@ impl GarbageJump for X32CodeAssembler {
 
 impl CallOver for X32CodeAssembler {
     fn add_call_over(&self, payload: Vec<u8>) -> Vec<u8> {
-        let len = payload.len() as i32 + 5;
+        let len = payload.len() as i32;
         let mut bin = vec![0xE8u8];
         bin.extend(len.to_le_bytes());
         bin.extend(payload);
