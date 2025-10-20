@@ -16,7 +16,7 @@
 
 use std::{
     fs::File,
-    io::{Read, Write},
+    io::{Read, Write}
 };
 
 use clap::{arg, Parser, ValueEnum};

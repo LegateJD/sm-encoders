@@ -78,9 +78,6 @@ impl SchemaDecoderStub for X64CodeAssembler {
                         }
                         _ => unreachable!(),
                     }
-                    dynasm!(assembler
-                        ; xor DWORD [Rq(indexer_register_id) + index], BigEndian::read_u32(&k) as i32
-                    );
                 }
                 None => {
                     dynasm!(assembler

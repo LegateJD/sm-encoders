@@ -117,11 +117,9 @@ impl<AsmType: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + Sc
 {
     fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
         let mut bin = payload.to_vec();
-
         let mut garbage = self.assembler.generate_garbage_instructions();
         garbage.extend(bin.iter());
-
-        let schema_size = (garbage.len() - bin.len()) / 8 + 1;
+        let schema_size = (garbage.len() - bin.len()) / 4 + 1;
         bin = garbage;
 
         let random_schema = new_cipher_schema(schema_size);
@@ -164,15 +162,11 @@ fn schema_cipher(mut payload: Vec<u8>, schema: &Vec<Operation>) -> Vec<u8> {
                 BigEndian::write_u32(&mut payload[index..index + 4], encoded)
             }
             SchemaInstruction::ADD => {
-                let encoded = (LittleEndian::read_u32(&payload[index..index + 4])
-                    - BigEndian::read_u32(&operation.key.unwrap()))
-                    % 0xFFFFFFFF;
+                let encoded = LittleEndian::read_u32(&payload[index..index + 4]).wrapping_sub(BigEndian::read_u32(&operation.key.unwrap()));
                 LittleEndian::write_u32(&mut payload[index..index + 4], encoded)
             }
             SchemaInstruction::SUB => {
-                let encoded = (LittleEndian::read_u32(&payload[index..index + 4])
-                    + BigEndian::read_u32(&operation.key.unwrap()))
-                    % 0xFFFFFFFF;
+                let encoded = LittleEndian::read_u32(&payload[index..index + 4]).wrapping_add(BigEndian::read_u32(&operation.key.unwrap()));
                 LittleEndian::write_u32(&mut payload[index..index + 4], encoded)
             }
             SchemaInstruction::ROL => {

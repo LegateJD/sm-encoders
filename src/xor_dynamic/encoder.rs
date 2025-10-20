@@ -32,8 +32,8 @@ pub type XorDynamicEncoderAArch64 = XorDynamicEncoder<AArch64CodeAssembler>;
 #[derive(Debug)]
 pub struct XorDynamicEncoder<AsmType: XorDynamicStub> {
     assembler: AsmType,
-    stub_key_term: Vec<u8>,
-    stub_payload_term: Vec<u8>,
+    stub_key_terminator: Vec<u8>,
+    stub_payload_terminator: Vec<u8>,
     badchars: HashSet<u8>,
 }
 
@@ -111,17 +111,17 @@ where
 {
     pub fn new(seed: u8) -> Self {
         let assembler = AsmType::new();
-        let stub_key_term = vec![0x41];
-        let stub_payload_term = vec![0x42, 0x42];
-        let mut badchars = HashSet::new();
+        let stub_key_terminator = vec![0x41];
+        let stub_payload_terminator = vec![0x42, 0x42];
+        let mut badchars: HashSet<u8> = HashSet::new();
         badchars.insert(0x00);
         badchars.insert(0x0a);
         badchars.insert(0x0d);
 
         Self {
             assembler,
-            stub_key_term,
-            stub_payload_term,
+            stub_key_terminator,
+            stub_payload_terminator,
             badchars,
         }
     }
@@ -136,14 +136,14 @@ where
         let stub = self.assembler.get_decoder_stub()?;
 
         let stub_without_terms = stub
-            .windows(self.stub_key_term.len())
-            .filter(|w| *w != self.stub_key_term.as_slice())
+            .windows(self.stub_key_terminator.len())
+            .filter(|w| *w != self.stub_key_terminator.as_slice())
             .collect::<Vec<_>>()
             .concat();
 
         let stub_cleaned = stub_without_terms
-            .windows(self.stub_payload_term.len())
-            .filter(|w| *w != self.stub_payload_term.as_slice())
+            .windows(self.stub_payload_terminator.len())
+            .filter(|w| *w != self.stub_payload_terminator.as_slice())
             .collect::<Vec<_>>()
             .concat();
 
@@ -166,8 +166,8 @@ where
         let mut final_payload = Vec::new();
 
         let mut stub_replaced = stub.clone();
-        stub_replaced = replace_subsequence(&stub_replaced, &self.stub_key_term, &[key_term]);
-        stub_replaced = replace_subsequence(&stub_replaced, &self.stub_payload_term, &payload_term);
+        stub_replaced = replace_subsequence(&stub_replaced, &self.stub_key_terminator, &[key_term]);
+        stub_replaced = replace_subsequence(&stub_replaced, &self.stub_payload_terminator, &payload_term);
         final_payload.extend_from_slice(&stub_replaced);
         final_payload.extend_from_slice(&key);
         final_payload.push(key_term);
