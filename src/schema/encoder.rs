@@ -117,17 +117,8 @@ impl<AsmType: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + Sc
 {
     fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
         let mut bin = payload.to_vec();
-
         let mut garbage = self.assembler.generate_garbage_instructions();
-
         garbage.extend(bin.iter());
-
-        println!("Hexadecimal representation:");
-        for byte in &garbage {
-            print!("{:02x} ", byte);
-        }
-        println!("\n");
-
         let schema_size = (garbage.len() - bin.len()) / 4 + 1;
         bin = garbage;
 

@@ -63,12 +63,7 @@ fn main() {
 }
 
 fn encode() -> Result<(), String> {
-    //let args = Args::parse();
-    let args = Args {
-        input: "input.bin".into(),
-        output: "output.bin".into(),
-        encoder_type: EncoderType::Schema
-    };
+    let args = Args::parse();
     let mut buf = vec![];
     let seed: u8 = rand::rng().random();
 
