@@ -132,7 +132,7 @@ impl<AsmType: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + Sc
     type Error = SchemaEncoderError;
 }
 
-fn new_cipher_schema(size: usize) -> Vec<Operation> {
+pub(crate) fn new_cipher_schema(size: usize) -> Vec<Operation> {
     let mut schema = Vec::with_capacity(size);
     let mut rng = rand::rng();
 
@@ -152,7 +152,7 @@ fn new_cipher_schema(size: usize) -> Vec<Operation> {
     schema
 }
 
-fn schema_cipher(mut payload: Vec<u8>, schema: &Vec<Operation>) -> Vec<u8> {
+pub(crate) fn schema_cipher(mut payload: Vec<u8>, schema: &Vec<Operation>) -> Vec<u8> {
     let mut index = 0;
     for operation in schema {
         match operation.instruction {

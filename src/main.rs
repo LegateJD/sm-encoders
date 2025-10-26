@@ -33,6 +33,7 @@ pub mod schema;
 pub mod arm64;
 pub mod obfuscation;
 pub mod utils;
+pub mod pipeline;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -46,6 +47,10 @@ struct Args {
 
     #[arg(short, long, value_enum)]
     encoder_type: EncoderType,
+
+    /// Do not encode the decoder stub
+    #[arg(short, long, default_value_t = false)]
+    plain_decoder: bool,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -67,7 +72,7 @@ fn encode() -> Result<(), String> {
     let mut buf = vec![];
     let seed: u8 = rand::rng().random();
 
-    let sgn_encoder = SgnEncoderX64::new(seed);
+    let sgn_encoder = SgnEncoderX64::new(seed, args.plain_decoder);
     let xor_dynamic_encoder = XorDynamicEncoderX64::new(seed);
     let schema_encoder = SchemaEncoderX64::new(seed);
 

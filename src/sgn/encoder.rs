@@ -25,11 +25,14 @@ use crate::{
 };
 use crate::obfuscation::aarch64::AArch64CodeAssembler;
 use crate::obfuscation::x32::X32CodeAssembler;
+use crate::schema::encoder::SchemaDecoderStub;
 
 #[derive(Error, Debug)]
 pub enum ShikataGaNaiError {
     #[error("AssemblerError")]
-    AssemblerError
+    AssemblerError,
+    #[error("Schema encoder error")]
+    SchemaEncoder
 }
 
 pub type SgnEncoderX64 = SgnEncoder<X64CodeAssembler>;
@@ -42,6 +45,7 @@ pub type SgnEncoderAArch64 = SgnEncoder<AArch64CodeAssembler>;
 pub struct SgnEncoder<AsmType: SgnDecoderStub> {
     seed: u8,
     assembler: AsmType,
+    plain_decoder: bool
 }
 
 pub trait SgnDecoderStub {
@@ -53,16 +57,22 @@ impl<AsmType> SgnEncoder<AsmType>
 where
     AsmType: SgnDecoderStub + AsmInit
 {
-    pub fn new(seed: u8) -> Self {
+    pub fn new(seed: u8, plain_decoder: bool) -> Self {
         let assembler = AsmType::new();
 
-        Self { seed, assembler }
+        Self { seed, assembler, plain_decoder }
+    }
+}
+
+impl From<crate::schema::encoder::SchemaEncoderError> for ShikataGaNaiError {
+    fn from(_: crate::schema::encoder::SchemaEncoderError) -> Self {
+        ShikataGaNaiError::SchemaEncoder
     }
 }
 
 impl<AsmType> Encoder for SgnEncoder<AsmType>
 where
-    AsmType: SgnDecoderStub + AsmInit,
+    AsmType: SgnDecoderStub + AsmInit + SchemaDecoderStub,
 {
     type Error = ShikataGaNaiError;
 
@@ -71,6 +81,14 @@ where
         additive_feedback_loop(&mut data, self.seed);
         let mut full_binary = self.assembler.get_sgn_decoder_stub(self.seed, data.len())?;
         full_binary.extend(data.iter());
+
+        if self.plain_decoder {
+            let schema_size = (full_binary.len() - data.len()) / 4 + 1;
+
+            let random_schema = crate::schema::encoder::new_cipher_schema(schema_size);
+            full_binary = crate::schema::encoder::schema_cipher(full_binary, &random_schema);
+            full_binary = self.assembler.add_schema_decoder(full_binary, &random_schema)?;
+        }
 
         Ok(full_binary)
     }
