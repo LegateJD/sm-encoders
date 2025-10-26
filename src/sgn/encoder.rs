@@ -24,6 +24,7 @@ use crate::{
     },
 };
 use crate::obfuscation::aarch64::AArch64CodeAssembler;
+use crate::obfuscation::common::GarbageInstructions;
 use crate::obfuscation::x32::X32CodeAssembler;
 use crate::schema::encoder::SchemaDecoderStub;
 
@@ -72,7 +73,7 @@ impl From<crate::schema::encoder::SchemaEncoderError> for ShikataGaNaiError {
 
 impl<AsmType> Encoder for SgnEncoder<AsmType>
 where
-    AsmType: SgnDecoderStub + AsmInit + SchemaDecoderStub,
+    AsmType: SgnDecoderStub + AsmInit + SchemaDecoderStub + GarbageInstructions,
 {
     type Error = ShikataGaNaiError;
 
@@ -82,9 +83,11 @@ where
         let mut full_binary = self.assembler.get_sgn_decoder_stub(self.seed, data.len())?;
         full_binary.extend(data.iter());
 
-        if self.plain_decoder {
+        if !self.plain_decoder {
+            let mut garbage = self.assembler.generate_garbage_instructions();
+            garbage.extend(full_binary.iter());
+            full_binary = garbage;
             let schema_size = (full_binary.len() - data.len()) / 4 + 1;
-
             let random_schema = crate::schema::encoder::new_cipher_schema(schema_size);
             full_binary = crate::schema::encoder::schema_cipher(full_binary, &random_schema);
             full_binary = self.assembler.add_schema_decoder(full_binary, &random_schema)?;
