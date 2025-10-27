@@ -10,4 +10,6 @@ clap = { version = "4.5.39", features = ["derive"] }
 dynasmrt = "3.2.0"
 rand = "0.9.1"
 thiserror = "2.0.12"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_yaml = "0.9.34+deprecated"
 
