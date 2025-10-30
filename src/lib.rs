@@ -14,10 +14,22 @@
  * limitations under the License.
  */
 
-pub mod encoder;
-pub mod x64;
-pub mod x32;
-pub mod aarch64;
-mod c_bindings;
+pub mod core;
+pub mod obfuscation;
+pub mod pipeline;
+pub mod schema;
+pub mod sgn;
+pub mod utils;
+pub mod x64_arch;
+pub mod xor_dynamic;
+pub mod arm64;
+
 #[cfg(feature = "python")]
-pub mod py_bindings;
+use pyo3::prelude::*;
+
+#[cfg(feature = "python")]
+#[pymodule]
+fn sm_encoders(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_class::<sgn::py_bindings::PySgnEncoderX64>()?;
+    Ok(())
+}

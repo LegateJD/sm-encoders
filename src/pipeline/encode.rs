@@ -15,7 +15,7 @@
  */
 
 use crate::core::encoder::Encoder;
-use crate::pipeline::parser::{PipelineConfig, StageConfig};
+use crate::pipeline::parser::{Architecture, PipelineConfig, StageConfig, StageType};
 use crate::sgn::encoder::{SgnEncoderX64, SgnEncoderX32, SgnEncoderAArch64};
 use crate::xor_dynamic::encoder::XorDynamicEncoderX64;
 use crate::schema::encoder::{SchemaEncoderX64, SchemaEncoderX32, SchemaEncoderAArch64};
@@ -88,57 +88,56 @@ impl Default for Pipeline {
 
 /// Create a stage from configuration
 fn create_stage_from_config(config: &StageConfig) -> Result<Box<dyn Stage>, String> {
-    match config.stage_type.as_str() {
-        "sgn" => create_sgn_stage(config),
-        "xor_dynamic" => create_xor_dynamic_stage(config),
-        "schema" => create_schema_stage(config),
-        _ => Err(format!("Unknown stage type: {}", config.stage_type)),
+    match config.stage_type {
+        StageType::Sgn => create_sgn_stage(config),
+        StageType::XorDynamic => create_xor_dynamic_stage(config),
+        StageType::Schema => create_schema_stage(config),
     }
 }
 
 fn create_sgn_stage(config: &StageConfig) -> Result<Box<dyn Stage>, String> {
-    match config.config.architecture.as_str() {
-        "x64" => {
+    match config.config.architecture {
+        Architecture::X64 => {
             let encoder = SgnEncoderX64::new(config.config.seed, config.config.plain_decoder);
             Ok(Box::new(EncoderStage { encoder }))
         }
-        /*"x32" => {
+        _ => unreachable!()
+        /*Architecture::X32 => {
             let encoder = SgnEncoderX32::new(config.config.seed, config.config.plain_decoder);
             Ok(Box::new(EncoderStage { encoder }))
         }
-        "aarch64" => {
+        Architecture::AArch64 => {
             let encoder = SgnEncoderAArch64::new(config.config.seed, config.config.plain_decoder);
             Ok(Box::new(EncoderStage { encoder }))
         }*/
-        _ => Err(format!("Unsupported architecture for SGN: {}", config.config.architecture)),
     }
 }
 
 fn create_xor_dynamic_stage(config: &StageConfig) -> Result<Box<dyn Stage>, String> {
-    match config.config.architecture.as_str() {
-        "x64" => {
+    match config.config.architecture {
+        Architecture::X64 => {
             let encoder = XorDynamicEncoderX64::new(config.config.seed);
             Ok(Box::new(EncoderStage { encoder }))
         }
-        _ => Err(format!("Unsupported architecture for XorDynamic: {}", config.config.architecture)),
+        _ => Err(format!("Unsupported architecture for XorDynamic: {}", config.config.architecture.as_str())),
     }
 }
 
 fn create_schema_stage(config: &StageConfig) -> Result<Box<dyn Stage>, String> {
-    match config.config.architecture.as_str() {
-        "x64" => {
+    match config.config.architecture {
+        Architecture::X64 => {
             let encoder = SchemaEncoderX64::new(config.config.seed);
             Ok(Box::new(EncoderStage { encoder }))
         }
-        /*"x32" => {
+        _ => unreachable!()
+        /*Architecture::X32 => {
             let encoder = SchemaEncoderX32::new(config.config.seed);
             Ok(Box::new(EncoderStage { encoder }))
         }
-        "aarch64" => {
+        Architecture::AArch64 => {
             let encoder = SchemaEncoderAArch64::new(config.config.seed);
             Ok(Box::new(EncoderStage { encoder }))
         }*/
-        _ => Err(format!("Unsupported architecture for Schema: {}", config.config.architecture)),
     }
 }
 

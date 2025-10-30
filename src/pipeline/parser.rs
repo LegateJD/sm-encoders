@@ -31,18 +31,54 @@ pub struct PipelineDefinition {
     pub stages: Vec<StageConfig>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum StageType {
+    Sgn,
+    XorDynamic,
+    Schema,
+}
+
+impl StageType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            StageType::Sgn => "sgn",
+            StageType::XorDynamic => "xor_dynamic",
+            StageType::Schema => "schema",
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StageConfig {
     #[serde(rename = "type")]
-    pub stage_type: String,
+    pub stage_type: StageType,
     pub config: StageConfigData,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum Architecture {
+    X64,
+    X32,
+    AArch64,
+}
+
+impl Architecture {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Architecture::X64 => "x64",
+            Architecture::X32 => "x32",
+            Architecture::AArch64 => "aarch64",
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StageConfigData {
     #[serde(default)]
     pub seed: u8,
-    pub architecture: String,
+    pub architecture: Architecture,
     #[serde(default)]
     pub plain_decoder: bool,
     #[serde(default)]
@@ -76,28 +112,15 @@ impl PipelineConfig {
             return Err("Pipeline must have at least one stage".to_string());
         }
 
-        for (idx, stage) in self.pipeline.stages.iter().enumerate() {
-            self.validate_stage(stage, idx)?;
-        }
-
         Ok(())
     }
 
     fn validate_stage(&self, stage: &StageConfig, idx: usize) -> Result<(), String> {
         match stage.stage_type.as_str() {
-            "sgn" | "xor_dynamic" | "schema" => {},
-            other => return Err(format!(
+            "sgn" | "xor_dynamic" | "schema" => Ok(()),
+            other => Err(format!(
                 "Invalid stage type '{}' at stage {}", other, idx
             )),
         }
-
-        match stage.config.architecture.as_str() {
-            "x64" | "x32" | "aarch64" => {},
-            other => return Err(format!(
-                "Invalid architecture '{}' at stage {}", other, idx
-            )),
-        }
-
-        Ok(())
     }
 }

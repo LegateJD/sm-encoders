@@ -1,0 +1,6 @@
+"""Type stubs for sm_encoders"""
+
+class PySgnEncoderX64:
+    """SGN Encoder for x64 architecture"""
+    def __init__(self, seed: int = 0, plain_decoder: bool = False) -> None: ...
+    def encode(self, payload: bytes) -> bytes: ...

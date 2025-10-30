@@ -22,7 +22,7 @@ use std::{
 use clap::{arg, Parser, ValueEnum};
 use rand::Rng;
 
-use crate::{core::encoder::Encoder, obfuscation::x64::X64CodeAssembler, sgn::encoder::{SgnEncoder, SgnEncoderX64}, xor_dynamic::encoder::XorDynamicEncoderX64};
+use crate::{core::encoder::Encoder, sgn::encoder::SgnEncoderX64, xor_dynamic::encoder::XorDynamicEncoderX64};
 use crate::pipeline::encode::Pipeline;
 use crate::schema::encoder::SchemaEncoderX64;
 
@@ -35,6 +35,7 @@ pub mod arm64;
 pub mod obfuscation;
 pub mod utils;
 pub mod pipeline;
+
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {

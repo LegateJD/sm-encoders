@@ -12,4 +12,11 @@ rand = "0.9.1"
 thiserror = "2.0.12"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_yaml = "0.9.34+deprecated"
+pyo3 = { version = "0.23", features = ["extension-module"], optional = true }
 
+[features]
+default = []
+python = ["pyo3"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
