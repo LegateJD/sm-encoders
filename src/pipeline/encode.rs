@@ -16,9 +16,9 @@
 
 use crate::core::encoder::Encoder;
 use crate::pipeline::parser::{Architecture, PipelineConfig, StageConfig, StageType};
-use crate::sgn::encoder::{SgnEncoderX64, SgnEncoderX32, SgnEncoderAArch64};
+use crate::schema::encoder::SchemaEncoderX64;
+use crate::sgn::encoder::SgnEncoderX64;
 use crate::xor_dynamic::encoder::XorDynamicEncoderX64;
-use crate::schema::encoder::{SchemaEncoderX64, SchemaEncoderX32, SchemaEncoderAArch64};
 
 /// A processing stage that transforms bytes.
 pub trait Stage: Send + Sync {
@@ -98,7 +98,7 @@ fn create_stage_from_config(config: &StageConfig) -> Result<Box<dyn Stage>, Stri
 fn create_sgn_stage(config: &StageConfig) -> Result<Box<dyn Stage>, String> {
     match config.config.architecture {
         Architecture::X64 => {
-            let encoder = SgnEncoderX64::new(config.config.seed, config.config.plain_decoder);
+            let encoder = SgnEncoderX64::new(config.config.seed, config.config.plain_decoder, config.config.encoding_count, config.config.save_registers);
             Ok(Box::new(EncoderStage { encoder }))
         }
         _ => unreachable!()

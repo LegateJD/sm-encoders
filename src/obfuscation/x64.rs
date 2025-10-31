@@ -19,6 +19,7 @@ use rand::RngCore;
 use crate::{
     core::encoder::AsmInit, obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump}, utils::randomization::coin_flip, x64_arch::garbage::generate_garbage_x64_assembly
 };
+use crate::obfuscation::common::AsmSaveRegisters;
 
 pub struct X64CodeAssembler {}
 
@@ -81,5 +82,25 @@ impl GarbageInstructions for X64CodeAssembler {
 impl GarbageAssembly for X64CodeAssembler {
     fn generate_garbage_assembly(&self) -> Vec<u8> {
         generate_garbage_x64_assembly()
+    }
+}
+
+impl AsmSaveRegisters for X64CodeAssembler {
+    fn get_save_registers_suffix(&self) -> Vec<u8> {
+        vec![0x41, 0x5f, 0x41, 0x5e, // POP R15,R14
+             0x41, 0x5d, 0x41, 0x5c, // POP R13,R12
+             0x41, 0x5b, 0x41, 0x5a, // POP R11,R10
+             0x41, 0x59, 0x41, 0x58, // POP R9,R8
+             0x5c, 0x5d, 0x5f, 0x5e, // POP RSP,RBP,RDI,RSI
+             0x5a, 0x59, 0x5b, 0x58] // POP RDX,RCX,RBX,RAX
+    }
+
+    fn get_save_registers_prefix(&self) -> Vec<u8> {
+        vec![0x41, 0x5f, 0x41, 0x5e, // POP R15,R14
+             0x41, 0x5d, 0x41, 0x5c, // POP R13,R12
+             0x41, 0x5b, 0x41, 0x5a, // POP R11,R10
+             0x41, 0x59, 0x41, 0x58, // POP R9,R8
+             0x5c, 0x5d, 0x5f, 0x5e, // POP RSP,RBP,RDI,RSI
+             0x5a, 0x59, 0x5b, 0x58] // POP RDX,RCX,RBX,RAX
     }
 }

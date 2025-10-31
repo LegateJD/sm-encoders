@@ -31,3 +31,9 @@ pub trait CallOver {
 pub trait GarbageInstructions {
     fn generate_garbage_instructions(&self) -> Vec<u8>;
 }
+
+pub trait AsmSaveRegisters {
+    fn get_save_registers_suffix(&self) -> Vec<u8>;
+
+    fn get_save_registers_prefix(&self) -> Vec<u8>;
+}

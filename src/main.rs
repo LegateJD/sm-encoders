@@ -55,6 +55,14 @@ struct Args {
     #[arg(short, long, default_value_t = false)]
     plain_decoder: bool,
 
+    /// Number of encoding iterations (ignored if --pipeline is specified)
+    #[arg(long, default_value_t = 1)]
+    encoding_count: u32,
+
+    /// Save and restore registers in decoder stub (ignored if --pipeline is specified)
+    #[arg(long, default_value_t = false)]
+    save_registers: bool,
+
     /// Path to pipeline YAML configuration file
     #[arg(long, conflicts_with = "encoder_type")]
     pipeline: Option<String>,
@@ -75,14 +83,7 @@ fn main() {
 }
 
 fn encode() -> Result<(), String> {
-    //let args = Args::parse();
-    let args = Args {
-        input: String::from("input.bin"),
-        output: String::from("output.bin"),
-        encoder_type: None,
-        plain_decoder: false,
-        pipeline: Some(String::from("pipeline.yaml")),
-    };
+    let args = Args::parse();
 
     let mut buf = vec![];
     let mut input_file = File::open(&args.input).map_err(|x| x.to_string())?;
@@ -105,7 +106,7 @@ fn encode() -> Result<(), String> {
 
         match encoder_type {
             EncoderType::Sgn => {
-                let encoder = SgnEncoderX64::new(seed, args.plain_decoder);
+                let encoder = SgnEncoderX64::new(seed, args.plain_decoder, args.encoding_count, args.save_registers);
                 encoder.encode(&buf).map_err(|x| x.to_string())?
             }
             EncoderType::XorDynamic => {

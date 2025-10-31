@@ -1,5 +1,5 @@
 use crate::core::encoder::Encoder;
-use crate::sgn::encoder::{SgnEncoderX32, SgnEncoderX64};
+use crate::sgn::encoder::SgnEncoderX64;
 
 #[repr(C)]
 pub struct CByteArray {
@@ -9,8 +9,13 @@ pub struct CByteArray {
 }
 
 #[no_mangle]
-pub extern "C" fn sgn_encoder_x64_new(seed: u8, plain_decoder: bool) -> *mut SgnEncoderX64 {
-    let encoder = Box::new(SgnEncoderX64::new(seed, plain_decoder));
+pub extern "C" fn sgn_encoder_x64_new(
+    seed: u8,
+    plain_decoder: bool,
+    encoding_count: u32,
+    save_registers: bool
+) -> *mut SgnEncoderX64 {
+    let encoder = Box::new(SgnEncoderX64::new(seed, plain_decoder, encoding_count, save_registers));
     Box::into_raw(encoder)
 }
 

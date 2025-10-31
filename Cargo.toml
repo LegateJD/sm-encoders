@@ -19,4 +19,5 @@ default = []
 python = ["pyo3"]
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+name = "sm_encoders"
+crate-type = ["cdylib", "staticlib", "rlib"]

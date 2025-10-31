@@ -82,6 +82,10 @@ pub struct StageConfigData {
     #[serde(default)]
     pub plain_decoder: bool,
     #[serde(default)]
+    pub save_registers: bool,
+    #[serde(default)]
+    pub encoding_count: u32,
+    #[serde(default)]
     pub badchars: Vec<u8>,
     #[serde(default)]
     pub schema_size: Option<usize>,
@@ -112,15 +116,56 @@ impl PipelineConfig {
             return Err("Pipeline must have at least one stage".to_string());
         }
 
+        for (idx, stage) in self.pipeline.stages.iter().enumerate() {
+            self.validate_stage(stage, idx)?;
+        }
+
         Ok(())
     }
 
     fn validate_stage(&self, stage: &StageConfig, idx: usize) -> Result<(), String> {
-        match stage.stage_type.as_str() {
-            "sgn" | "xor_dynamic" | "schema" => Ok(()),
-            other => Err(format!(
-                "Invalid stage type '{}' at stage {}", other, idx
-            )),
+        // Validate stage type
+        match stage.stage_type {
+            StageType::Sgn | StageType::XorDynamic | StageType::Schema => {},
         }
+
+        // Validate SGN-specific parameters
+        if stage.stage_type == StageType::Sgn {
+            if stage.config.encoding_count == 0 {
+                return Err(format!(
+                    "Stage {}: SGN encoding_count must be greater than 0 (use at least 1)",
+                    idx
+                ));
+            }
+
+            if stage.config.encoding_count > 10 {
+                return Err(format!(
+                    "Stage {}: SGN encoding_count should not exceed 10 (got {})",
+                    idx, stage.config.encoding_count
+                ));
+            }
+        }
+
+        // Validate schema-specific parameters
+        if stage.stage_type == StageType::Schema {
+            if let Some(size) = stage.config.schema_size {
+                if size == 0 {
+                    return Err(format!(
+                        "Stage {}: Schema size must be greater than 0",
+                        idx
+                    ));
+                }
+            }
+        }
+
+        // Validate badchars
+        if stage.config.badchars.len() > 256 {
+            return Err(format!(
+                "Stage {}: Too many badchars specified (max 256)",
+                idx
+            ));
+        }
+
+        Ok(())
     }
 }

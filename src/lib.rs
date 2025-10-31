@@ -23,6 +23,7 @@ pub mod utils;
 pub mod x64_arch;
 pub mod xor_dynamic;
 pub mod arm64;
+pub use sgn::c_bindings::*;
 
 #[cfg(feature = "python")]
 use pyo3::prelude::*;

@@ -1,30 +1,13 @@
-/*
- * Copyright 2025 Mykyta Zakharov
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 use thiserror::Error;
 
 use crate::{
     core::encoder::{AsmInit, Encoder},
     obfuscation::{
-        common::{CallOver, GarbageJump},
-        x64::X64CodeAssembler,
+        x64::X64CodeAssembler
     },
 };
 use crate::obfuscation::aarch64::AArch64CodeAssembler;
-use crate::obfuscation::common::GarbageInstructions;
+use crate::obfuscation::common::{AsmSaveRegisters, GarbageInstructions};
 use crate::obfuscation::x32::X32CodeAssembler;
 use crate::schema::encoder::SchemaDecoderStub;
 
@@ -46,7 +29,9 @@ pub type SgnEncoderAArch64 = SgnEncoder<AArch64CodeAssembler>;
 pub struct SgnEncoder<AsmType: SgnDecoderStub> {
     seed: u8,
     assembler: AsmType,
-    plain_decoder: bool
+    plain_decoder: bool,
+    encoding_count: u32,
+    save_registers: bool,
 }
 
 pub trait SgnDecoderStub {
@@ -58,10 +43,10 @@ impl<AsmType> SgnEncoder<AsmType>
 where
     AsmType: SgnDecoderStub + AsmInit
 {
-    pub fn new(seed: u8, plain_decoder: bool) -> Self {
+    pub fn new(seed: u8, plain_decoder: bool, encoding_count: u32, save_registers: bool) -> Self {
         let assembler = AsmType::new();
 
-        Self { seed, assembler, plain_decoder }
+        Self { seed, assembler, plain_decoder, encoding_count, save_registers }
     }
 }
 
@@ -73,27 +58,55 @@ impl From<crate::schema::encoder::SchemaEncoderError> for ShikataGaNaiError {
 
 impl<AsmType> Encoder for SgnEncoder<AsmType>
 where
-    AsmType: SgnDecoderStub + AsmInit + SchemaDecoderStub + GarbageInstructions,
+    AsmType: SgnDecoderStub + AsmInit + SchemaDecoderStub + GarbageInstructions + AsmSaveRegisters
 {
     type Error = ShikataGaNaiError;
 
     fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
         let mut data = payload.to_vec();
+
+        if self.save_registers {
+            let save_registers_suffix = self.assembler.get_save_registers_suffix();
+            data.extend(save_registers_suffix.iter());
+        }
+
+        let mut full_binary = self.encode_recursive(&data, self.encoding_count)?;
+
+        if self.save_registers {
+            let mut save_registers_prefix = self.assembler.get_save_registers_prefix();
+            save_registers_prefix.extend(full_binary.iter());
+            full_binary = save_registers_prefix;
+        }
+
+        Ok(full_binary)
+    }
+}
+
+impl<AsmType> SgnEncoder<AsmType>
+where
+    AsmType: SgnDecoderStub + AsmInit + SchemaDecoderStub + GarbageInstructions + AsmSaveRegisters
+{
+    fn encode_recursive(&self, payload: &[u8], iterations_remaining: u32) -> Result<Vec<u8>, ShikataGaNaiError> {
+        if iterations_remaining == 0 {
+            return Ok(payload.to_vec());
+        }
+
+        let mut data = payload.to_vec();
+        let mut garbage = self.assembler.generate_garbage_instructions();
+        garbage.extend(data.iter());
+        data = garbage;
         additive_feedback_loop(&mut data, self.seed);
         let mut full_binary = self.assembler.get_sgn_decoder_stub(self.seed, data.len())?;
         full_binary.extend(data.iter());
 
         if !self.plain_decoder {
-            let mut garbage = self.assembler.generate_garbage_instructions();
-            garbage.extend(full_binary.iter());
-            full_binary = garbage;
             let schema_size = (full_binary.len() - data.len()) / 4 + 1;
             let random_schema = crate::schema::encoder::new_cipher_schema(schema_size);
             full_binary = crate::schema::encoder::schema_cipher(full_binary, &random_schema);
             full_binary = self.assembler.add_schema_decoder(full_binary, &random_schema)?;
         }
 
-        Ok(full_binary)
+        self.encode_recursive(&full_binary, iterations_remaining - 1)
     }
 }
 
