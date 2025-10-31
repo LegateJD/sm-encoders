@@ -1,0 +1,19 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "sm-encoders"
+version = "0.1.0"
+description = "Shikata Ga Nai and other encoders for shellcode obfuscation"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+
+[tool.maturin]
+features = ["python"]
+python-source = "python"
+include = ["python/sm_encoders/__init__.pyi", "python/sm_encoders/py.typed"]

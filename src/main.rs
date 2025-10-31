@@ -22,7 +22,8 @@ use std::{
 use clap::{arg, Parser, ValueEnum};
 use rand::Rng;
 
-use crate::{core::encoder::Encoder, obfuscation::x64::X64CodeAssembler, sgn::encoder::{SgnEncoder, SgnEncoderX64}, xor_dynamic::encoder::XorDynamicEncoderX64};
+use crate::{core::encoder::Encoder, sgn::encoder::SgnEncoderX64, xor_dynamic::encoder::XorDynamicEncoderX64};
+use crate::pipeline::encode::Pipeline;
 use crate::schema::encoder::SchemaEncoderX64;
 
 pub mod sgn;
@@ -33,6 +34,8 @@ pub mod schema;
 pub mod arm64;
 pub mod obfuscation;
 pub mod utils;
+pub mod pipeline;
+
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -44,8 +47,25 @@ struct Args {
     #[arg(short, long)]
     output: String,
 
+    /// Encoder type (ignored if --pipeline is specified)
     #[arg(short, long, value_enum)]
-    encoder_type: EncoderType,
+    encoder_type: Option<EncoderType>,
+
+    /// Do not encode the decoder stub (ignored if --pipeline is specified)
+    #[arg(short, long, default_value_t = false)]
+    plain_decoder: bool,
+
+    /// Number of encoding iterations (ignored if --pipeline is specified)
+    #[arg(long, default_value_t = 1)]
+    encoding_count: u32,
+
+    /// Save and restore registers in decoder stub (ignored if --pipeline is specified)
+    #[arg(long, default_value_t = false)]
+    save_registers: bool,
+
+    /// Path to pipeline YAML configuration file
+    #[arg(long, conflicts_with = "encoder_type")]
+    pipeline: Option<String>,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -64,23 +84,48 @@ fn main() {
 
 fn encode() -> Result<(), String> {
     let args = Args::parse();
+
     let mut buf = vec![];
-    let seed: u8 = rand::rng().random();
-
-    let sgn_encoder = SgnEncoderX64::new(seed);
-    let xor_dynamic_encoder = XorDynamicEncoderX64::new(seed);
-    let schema_encoder = SchemaEncoderX64::new(seed);
-
     let mut input_file = File::open(&args.input).map_err(|x| x.to_string())?;
     input_file
         .read_to_end(&mut buf)
         .map_err(|e| e.to_string())?;
 
-    let encoded = match args.encoder_type {
-        EncoderType::Sgn => sgn_encoder.encode(&buf).map_err(|x| x.to_string())?,
-        EncoderType::XorDynamic => xor_dynamic_encoder.encode(&buf).map_err(|x| x.to_string())?,
-        EncoderType::Schema => schema_encoder.encode(&buf).map_err(|x| x.to_string())?,
+    let encoded = if let Some(pipeline_path) = args.pipeline {
+        // Use pipeline mode
+        println!("Using pipeline configuration from: {}", pipeline_path);
+        let pipeline = Pipeline::from_file(&pipeline_path)?;
+        pipeline.run(&buf)?
+    } else {
+        // Use single encoder mode
+        let encoder_type = args.encoder_type
+            .ok_or("Either --encoder-type or --pipeline must be specified")?;
+
+        let seed: u8 = rand::rng().random();
+        println!("Using single encoder mode with seed: 0x{:02X}", seed);
+
+        match encoder_type {
+            EncoderType::Sgn => {
+                let encoder = SgnEncoderX64::new(seed, args.plain_decoder, args.encoding_count, args.save_registers);
+                encoder.encode(&buf).map_err(|x| x.to_string())?
+            }
+            EncoderType::XorDynamic => {
+                let encoder = XorDynamicEncoderX64::new(seed);
+                encoder.encode(&buf).map_err(|x| x.to_string())?
+            }
+            EncoderType::Schema => {
+                let encoder = SchemaEncoderX64::new(seed);
+                encoder.encode(&buf).map_err(|x| x.to_string())?
+            }
+        }
     };
+
+    println!("Encoded payload ({} bytes):", encoded.len());
+    for byte in &encoded {
+        print!("0x{:02x}, ", byte);
+    }
+
+    println!();
 
     let mut output_file = File::create(&args.output).map_err(|x| x.to_string())?;
     output_file.write_all(&encoded).map_err(|x| x.to_string())?;

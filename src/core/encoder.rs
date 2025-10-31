@@ -35,3 +35,4 @@ where
 pub trait AsmInit {
     fn new() -> Self;
 }
+
