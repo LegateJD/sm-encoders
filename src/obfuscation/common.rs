@@ -17,11 +17,11 @@
 pub trait GarbageJump {
     fn add_jmp_over(&self, payload: &[u8]) -> Vec<u8>;
 
-    fn generate_garbage_jump(&self) -> Vec<u8>;
+    fn generate_garbage_jump(&mut self) -> Vec<u8>;
 }
 
 pub trait GarbageAssembly {
-    fn generate_garbage_assembly(&self) -> Vec<u8>;
+    fn generate_garbage_assembly(&mut self) -> Vec<u8>;
 }
 
 pub trait CallOver {
@@ -29,7 +29,7 @@ pub trait CallOver {
 }
 
 pub trait GarbageInstructions {
-    fn generate_garbage_instructions(&self) -> Vec<u8>;
+    fn generate_garbage_instructions(&mut self) -> Vec<u8>;
 }
 
 pub trait AsmSaveRegisters {

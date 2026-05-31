@@ -16,11 +16,12 @@
 
 use byteorder::{BigEndian, ByteOrder};
 use dynasmrt::{dynasm, x64::X64Relocation, DynasmApi, DynasmError, DynasmLabelApi, VecAssembler};
+use rand::RngCore;
 use crate::{obfuscation::{common::{CallOver, GarbageInstructions}, x64::X64CodeAssembler}, schema::encoder::{Operation, SchemaDecoderStub, SchemaEncoderError, SchemaInstruction}, x64_arch::registers::{get_save_random_general_purpose_register, RSP_FULL}};
 
-impl SchemaDecoderStub for X64CodeAssembler {
+impl<RngType: RngCore> SchemaDecoderStub for X64CodeAssembler<RngType> {
     fn add_schema_decoder(
-        &self,
+        &mut self,
         mut payload: Vec<u8>,
         schema: &Vec<Operation>,
     ) -> Result<Vec<u8>, SchemaEncoderError> {

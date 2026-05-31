@@ -15,11 +15,11 @@
  */
 
 use dynasmrt::{dynasm, x64::X64Relocation, x86::X86Relocation, DynasmApi, DynasmError, DynasmLabelApi, VecAssembler};
+use rand::RngCore;
 
 use crate::{obfuscation::{x32::X32CodeAssembler, x64::X64CodeAssembler}, xor_dynamic::encoder::{XorDynamicEncoderError, XorDynamicStub}};
 
-
-impl XorDynamicStub for X32CodeAssembler {
+impl<RngType: RngCore> XorDynamicStub for X32CodeAssembler<RngType> {
     fn get_decoder_stub(&self) -> Result<Vec<u8>, XorDynamicEncoderError> {
         let mut assembler = VecAssembler::<X86Relocation>::new(0);
         dynasm!(assembler

@@ -16,8 +16,3 @@
 
 use rand::{seq::IndexedRandom, Rng};
 
-pub fn coin_flip() -> bool {
-    let mut rng = rand::rng();
-    rng.random()
-}
-

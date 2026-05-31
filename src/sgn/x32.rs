@@ -16,19 +16,20 @@
 
 
 use dynasmrt::{dynasm, x64::X64Relocation, x86::X86Relocation, DynasmApi, DynasmError, DynasmLabelApi, VecAssembler};
+use rand::RngCore;
 
-use crate::{obfuscation::x32::X32CodeAssembler, sgn::encoder::{SgnDecoderStub, ShikataGaNaiError}, x64_arch::registers::{get_save_random_general_purpose_register, RCX_FULL}};
+use crate::{obfuscation::x32::X32CodeAssembler, sgn::encoder::{SgnDecoderStub, ShikataGaNaiError}, x64_arch::registers::{RBP_FULL, RCX_FULL, RSP_FULL, get_save_random_general_purpose_register}};
 
-impl SgnDecoderStub for X32CodeAssembler {
+impl<RngType: RngCore> SgnDecoderStub for X32CodeAssembler<RngType> {
     fn get_sgn_decoder_stub(
         &self,
         seed: u8,
         payload_size: usize,
     ) -> Result<Vec<u8>, ShikataGaNaiError> {
         let mut assembler = VecAssembler::<X86Relocation>::new(0);
-        let indexer_register = get_save_random_general_purpose_register(&[RCX_FULL]);
+        let indexer_register = get_save_random_general_purpose_register(&[RCX_FULL, RBP_FULL, RSP_FULL]);
         let seed_register =
-            get_save_random_general_purpose_register(&[RCX_FULL, indexer_register.clone()]);
+            get_save_random_general_purpose_register(&[RCX_FULL, RBP_FULL, RSP_FULL, indexer_register.clone()]);
         let indexer_register_id = indexer_register.quad as u8;
         let seed_register_id = seed_register.low as u8;
 

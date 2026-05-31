@@ -23,11 +23,11 @@ use crate::{
     obfuscation::{aarch64::AArch64CodeAssembler, x32::X32CodeAssembler, x64::X64CodeAssembler},
 };
 
-pub type XorDynamicEncoderX64 = XorDynamicEncoder<X64CodeAssembler>;
+pub type XorDynamicEncoderX64 = XorDynamicEncoder<X64CodeAssembler<rand::rngs::ThreadRng>>;
 
-pub type XorDynamicEncoderX32 = XorDynamicEncoder<X32CodeAssembler>;
+pub type XorDynamicEncoderX32 = XorDynamicEncoder<X32CodeAssembler<rand::rngs::ThreadRng>>;
 
-pub type XorDynamicEncoderAArch64 = XorDynamicEncoder<AArch64CodeAssembler>;
+pub type XorDynamicEncoderAArch64 = XorDynamicEncoder<AArch64CodeAssembler<rand::rngs::ThreadRng>>;
 
 #[derive(Debug)]
 pub struct XorDynamicEncoder<AsmType: XorDynamicStub> {
@@ -131,7 +131,7 @@ impl<AsmType> Encoder for XorDynamicEncoder<AsmType>
 where
     AsmType: XorDynamicStub + AsmInit,
 {
-    fn encode(&self, buf: &[u8]) -> Result<Vec<u8>, Self::Error> {
+    fn encode(&mut self, buf: &[u8]) -> Result<Vec<u8>, Self::Error> {
         let badchars = self.badchars.clone();
         let stub = self.assembler.get_decoder_stub()?;
 

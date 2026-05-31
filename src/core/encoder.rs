@@ -16,10 +16,12 @@
 
 use std::error::Error;
 
+use rand::RngCore;
+
 pub trait Encoder {
     type Error: Sized + Error;
 
-    fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, Self::Error>;
+    fn encode(&mut self, payload: &[u8]) -> Result<Vec<u8>, Self::Error>;
 }
 
 pub trait DecoderStub<EncoderType>
@@ -34,5 +36,9 @@ where
 
 pub trait AsmInit {
     fn new() -> Self;
+}
+
+pub trait AsmInitWithRng<RngType: RngCore> {
+    fn new_with_rng(rng: RngType) -> Self;
 }
 

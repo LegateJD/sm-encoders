@@ -21,9 +21,9 @@ use crate::sgn::encoder::SgnEncoderX64;
 use crate::xor_dynamic::encoder::XorDynamicEncoderX64;
 
 /// A processing stage that transforms bytes.
-pub trait Stage: Send + Sync {
+pub trait Stage {
     /// Process input bytes and return transformed bytes.
-    fn process(&self, data: &[u8]) -> Result<Vec<u8>, String>;
+    fn process(&mut self, data: &[u8]) -> Result<Vec<u8>, String>;
 }
 
 #[allow(dead_code)]
@@ -71,9 +71,9 @@ impl Pipeline {
     }
 
     /// Execute the pipeline over the provided input.
-    pub fn run(&self, input: &[u8]) -> Result<Vec<u8>, String> {
+    pub fn run(&mut self, input: &[u8]) -> Result<Vec<u8>, String> {
         let mut data = input.to_vec();
-        for stage in &self.stages {
+        for stage in &mut self.stages {
             data = stage.process(&data)?;
         }
         Ok(data)
@@ -148,10 +148,10 @@ struct EncoderStage<E> {
 
 impl<E> Stage for EncoderStage<E>
 where
-    E: Encoder + Send + Sync,
+    E: Encoder,
     E::Error: std::fmt::Display,
 {
-    fn process(&self, data: &[u8]) -> Result<Vec<u8>, String> {
+    fn process(&mut self, data: &[u8]) -> Result<Vec<u8>, String> {
         self.encoder.encode(data).map_err(|e| e.to_string())
     }
 }

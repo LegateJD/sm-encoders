@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+use rand::rngs::ThreadRng;
+use rand_chacha::ChaCha20Rng;
 use thiserror::Error;
 
 use crate::{
@@ -35,11 +37,15 @@ pub enum ShikataGaNaiError {
     SchemaEncoder
 }
 
-pub type SgnEncoderX64 = SgnEncoder<X64CodeAssembler>;
+pub type SgnEncoderX64 = SgnEncoder<X64CodeAssembler<ThreadRng>>;
 
-pub type SgnEncoderX32 = SgnEncoder<X32CodeAssembler>;
+pub type SgnEncoderX32 = SgnEncoder<X32CodeAssembler<ThreadRng>>;
 
-pub type SgnEncoderAArch64 = SgnEncoder<AArch64CodeAssembler>;
+pub type SgnEncoderAArch64 = SgnEncoder<AArch64CodeAssembler<ThreadRng>>;
+
+pub type SgnEncoderX64ChaCha = SgnEncoder<X64CodeAssembler<ChaCha20Rng>>;
+pub type SgnEncoderX32ChaCha = SgnEncoder<X32CodeAssembler<ChaCha20Rng>>;
+pub type SgnEncoderAArch64ChaCha = SgnEncoder<AArch64CodeAssembler<ChaCha20Rng>>;
 
 #[derive(Debug)]
 pub struct SgnEncoder<AsmType: SgnDecoderStub> {
@@ -78,7 +84,7 @@ where
 {
     type Error = ShikataGaNaiError;
 
-    fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
+    fn encode(&mut self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
         let mut data = payload.to_vec();
 
         if self.save_registers {
@@ -102,7 +108,7 @@ impl<AsmType> SgnEncoder<AsmType>
 where
     AsmType: SgnDecoderStub + AsmInit + SchemaDecoderStub + GarbageInstructions + AsmSaveRegisters
 {
-    fn encode_recursive(&self, payload: &[u8], iterations_remaining: u32) -> Result<Vec<u8>, ShikataGaNaiError> {
+    fn encode_recursive(&mut self, payload: &[u8], iterations_remaining: u32) -> Result<Vec<u8>, ShikataGaNaiError> {
         if iterations_remaining == 0 {
             return Ok(payload.to_vec());
         }

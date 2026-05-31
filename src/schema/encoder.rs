@@ -20,8 +20,7 @@ use dynasmrt::{dynasm, x64::X64Relocation, DynasmApi, DynasmLabelApi, VecAssembl
 
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use rand::{
-    distr::{Distribution, StandardUniform},
-    Rng,
+    Rng, distr::{Distribution, StandardUniform}, rngs::ThreadRng
 };
 use thiserror::Error;
 
@@ -33,11 +32,11 @@ use crate::obfuscation::aarch64::AArch64CodeAssembler;
 use crate::obfuscation::x32::X32CodeAssembler;
 use crate::sgn::encoder::SgnEncoder;
 
-pub type SchemaEncoderX64 = SchemaEncoder<X64CodeAssembler>;
+pub type SchemaEncoderX64 = SchemaEncoder<X64CodeAssembler<ThreadRng>>;
 
-pub type SchemaEncoderX32 = SchemaEncoder<X32CodeAssembler>;
+pub type SchemaEncoderX32 = SchemaEncoder<X32CodeAssembler<ThreadRng>>;
 
-pub type SchemaEncoderAArch64 = SchemaEncoder<AArch64CodeAssembler>;
+pub type SchemaEncoderAArch64 = SchemaEncoder<AArch64CodeAssembler<ThreadRng>>;
 
 #[derive(Error, Debug)]
 pub enum SchemaEncoderError {
@@ -58,7 +57,7 @@ pub struct Operation {
 
 pub trait SchemaDecoderStub {
     fn add_schema_decoder(
-        &self,
+        &mut self,
         payload: Vec<u8>,
         schema: &Vec<Operation>,
     ) -> Result<Vec<u8>, SchemaEncoderError>;
@@ -115,7 +114,7 @@ impl Distribution<SchemaInstruction> for StandardUniform {
 impl<AsmType: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + SchemaDecoderStub> Encoder
     for SchemaEncoder<AsmType>
 {
-    fn encode(&self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
+    fn encode(&mut self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
         let mut bin = payload.to_vec();
         let mut garbage = self.assembler.generate_garbage_instructions();
         garbage.extend(bin.iter());

@@ -233,6 +233,7 @@ pub const R15_FULL: AsmRegister = AsmRegister {
     low: LowRegister::R15B,
 };
 
+// TODO: maybe remove RSP from general purpose registers
 pub const GENERAL_PURPOSE_REGISTERS_64_BIT: &[AsmRegister] = &[
     RAX_FULL, RBX_FULL, RCX_FULL, RDX_FULL, RSI_FULL, RDI_FULL, RBP_FULL, RSP_FULL, R8_FULL,
     R9_FULL, R10_FULL, R11_FULL, R12_FULL, R13_FULL, R14_FULL, R15_FULL,

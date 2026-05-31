@@ -46,7 +46,7 @@ pub extern "C" fn sgn_encoder_x64_free(encoder: *mut SgnEncoderX64) {
 
 #[no_mangle]
 pub extern "C" fn sgn_encoder_x64_encode(
-    encoder: *const SgnEncoderX64,
+    encoder: *mut SgnEncoderX64,
     payload: *const u8,
     payload_len: usize,
     out: *mut CByteArray,
@@ -56,7 +56,7 @@ pub extern "C" fn sgn_encoder_x64_encode(
     }
 
     unsafe {
-        let encoder_ref = &*encoder;
+        let encoder_ref = &mut *encoder;
         let payload_slice = std::slice::from_raw_parts(payload, payload_len);
 
         match encoder_ref.encode(payload_slice) {

@@ -14,19 +14,22 @@
  * limitations under the License.
  */
 
-use rand::RngCore;
+use rand::{RngCore, rngs::ThreadRng};
 
-use crate::{core::encoder::AsmInit, obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump}, utils::randomization::coin_flip, x64_arch::garbage::generate_garbage_x32_assembly};
+use crate::{core::encoder::AsmInit, obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump}, utils::rng::RngCoinFlip, x64_arch::garbage::generate_garbage_x32_assembly};
 
-pub struct X32CodeAssembler {}
+pub struct X32CodeAssembler<RngType: RngCore> {
+    rng: RngType
+}
 
-impl AsmInit for X32CodeAssembler {
+impl AsmInit for X32CodeAssembler<ThreadRng> {
     fn new() -> Self {
-        X32CodeAssembler {  }
+        let rng = rand::rng();
+        X32CodeAssembler { rng: rng }
     }
 }
 
-impl GarbageJump for X32CodeAssembler {
+impl<RngType: RngCore> GarbageJump for X32CodeAssembler<RngType> {
     fn add_jmp_over(&self, payload: &[u8]) -> Vec<u8> {
         let len = payload.len() as i32 + 2;
         let mut bin = vec![0xE9u8];
@@ -35,10 +38,9 @@ impl GarbageJump for X32CodeAssembler {
         bin
     }
 
-    fn generate_garbage_jump(&self) -> Vec<u8> {
-        let mut rng = rand::rng();
+    fn generate_garbage_jump(&mut self) -> Vec<u8> {
         let mut random_bytes = [0; 10];
-        rng.fill_bytes(&mut random_bytes);
+        self.rng.fill_bytes(&mut random_bytes);
         let mut final_bin = self.add_jmp_over(&random_bytes);
         final_bin.extend(random_bytes);
 
@@ -46,7 +48,7 @@ impl GarbageJump for X32CodeAssembler {
     }
 }
 
-impl CallOver for X32CodeAssembler {
+impl<RngType: RngCore> CallOver for X32CodeAssembler<RngType> {
     fn add_call_over(&self, payload: Vec<u8>) -> Vec<u8> {
         let len = payload.len() as i32;
         let mut bin = vec![0xE8u8];
@@ -57,14 +59,14 @@ impl CallOver for X32CodeAssembler {
     }
 }
 
-impl GarbageInstructions for X32CodeAssembler {
-    fn generate_garbage_instructions(&self) -> Vec<u8> {
+impl<RngType: RngCore> GarbageInstructions for X32CodeAssembler<RngType> {
+    fn generate_garbage_instructions(&mut self) -> Vec<u8> {
         let mut garbage_bin = self.generate_garbage_assembly();
 
-        if coin_flip() {
+        if self.rng.coin_flip() {
             let mut jmp_garbage = self.generate_garbage_jump();
 
-            if coin_flip() {
+            if self.rng.coin_flip() {
                 garbage_bin.extend(jmp_garbage.into_iter());
             } else {
                 jmp_garbage.extend(garbage_bin.into_iter());
@@ -76,8 +78,8 @@ impl GarbageInstructions for X32CodeAssembler {
     }
 }
 
-impl GarbageAssembly for X32CodeAssembler {
-    fn generate_garbage_assembly(&self) -> Vec<u8> {
-        generate_garbage_x32_assembly()
+impl<RngType: RngCore> GarbageAssembly for X32CodeAssembler<RngType> {
+    fn generate_garbage_assembly(&mut self) -> Vec<u8> {
+        generate_garbage_x32_assembly(&mut self.rng)
     }
 }

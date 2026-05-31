@@ -14,19 +14,22 @@
  * limitations under the License.
  */
 
-use rand::RngCore;
+use rand::{RngCore, rngs::ThreadRng};
 
-use crate::{core::encoder::AsmInit, obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump}, utils::randomization::coin_flip, x64_arch::garbage::generate_garbage_x64_assembly};
+use crate::{core::encoder::AsmInit, obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump}, utils::rng::RngCoinFlip, x64_arch::garbage::generate_garbage_x64_assembly};
 
-pub struct AArch64CodeAssembler {}
+pub struct AArch64CodeAssembler<RngType: RngCore> {
+    rng: RngType
+}
 
-impl AsmInit for AArch64CodeAssembler {
+impl AsmInit for AArch64CodeAssembler<ThreadRng> {
     fn new() -> Self {
-        AArch64CodeAssembler {  }
+        let rng = rand::rng();
+        AArch64CodeAssembler { rng: rng }
     }
 }
 
-impl GarbageJump for AArch64CodeAssembler {
+impl<RngType: RngCore> GarbageJump for AArch64CodeAssembler<RngType> {
     fn add_jmp_over(&self, payload: &[u8]) -> Vec<u8> {
         let words = (payload.len() + 3) / 4 + 1;
         let imm26 = (words & 0x3FFFFFF) as u32;
@@ -36,10 +39,9 @@ impl GarbageJump for AArch64CodeAssembler {
         bin
     }
 
-    fn generate_garbage_jump(&self) -> Vec<u8> {
-        let mut rng = rand::rng();
+    fn generate_garbage_jump(&mut self) -> Vec<u8> {
         let mut random_bytes = [0; 12];
-        rng.fill_bytes(&mut random_bytes);
+        self.rng.fill_bytes(&mut random_bytes);
         let mut final_bin = self.add_jmp_over(&random_bytes);
         final_bin.extend(random_bytes);
 
@@ -47,7 +49,7 @@ impl GarbageJump for AArch64CodeAssembler {
     }
 }
 
-impl CallOver for AArch64CodeAssembler {
+impl<RngType: RngCore> CallOver for AArch64CodeAssembler<RngType> {
     fn add_call_over(&self, payload: Vec<u8>) -> Vec<u8> {
         let words = ((payload.len() + 3) / 4) + 2;
 
@@ -61,14 +63,14 @@ impl CallOver for AArch64CodeAssembler {
     }
 }
 
-impl GarbageInstructions for AArch64CodeAssembler {
-    fn generate_garbage_instructions(&self) -> Vec<u8> {
+impl<RngType: RngCore> GarbageInstructions for AArch64CodeAssembler<RngType> {
+    fn generate_garbage_instructions(&mut self) -> Vec<u8> {
         let mut garbage_bin = self.generate_garbage_assembly();
 
-        if coin_flip() {
+        if self.rng.coin_flip() {
             let mut jmp_garbage = self.generate_garbage_jump();
 
-            if coin_flip() {
+            if self.rng.coin_flip() {
                 garbage_bin.extend(jmp_garbage.into_iter());
             } else {
                 jmp_garbage.extend(garbage_bin.into_iter());
@@ -80,8 +82,8 @@ impl GarbageInstructions for AArch64CodeAssembler {
     }
 }
 
-impl GarbageAssembly for AArch64CodeAssembler {
-    fn generate_garbage_assembly(&self) -> Vec<u8> {
-        generate_garbage_x64_assembly()
+impl<RngType: RngCore> GarbageAssembly for AArch64CodeAssembler<RngType> {
+    fn generate_garbage_assembly(&mut self) -> Vec<u8> {
+        generate_garbage_x64_assembly(&mut self.rng)
     }
 }
