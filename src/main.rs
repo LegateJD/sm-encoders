@@ -20,7 +20,7 @@ use std::{
 };
 
 use clap::{arg, Parser, ValueEnum};
-use rand::Rng;
+use rand::{Rng, RngExt};
 
 use crate::{core::encoder::Encoder, sgn::encoder::SgnEncoderX64, xor_dynamic::encoder::XorDynamicEncoderX64};
 use crate::pipeline::encode::Pipeline;
@@ -83,7 +83,16 @@ fn main() {
 }
 
 fn encode() -> Result<(), String> {
-    let args = Args::parse();
+    //let args = Args::parse();
+    let args = Args {
+        input: "input.bin".to_owned(),
+        output: "output.bin".to_owned(),
+        encoder_type: Some(EncoderType::Sgn),
+        plain_decoder: false,
+        encoding_count: 6,
+        save_registers: false,
+        pipeline: None, 
+    };
 
     let mut buf = vec![];
     let mut input_file = File::open(&args.input).map_err(|x| x.to_string())?;
@@ -94,7 +103,7 @@ fn encode() -> Result<(), String> {
     let encoded = if let Some(pipeline_path) = args.pipeline {
         // Use pipeline mode
         println!("Using pipeline configuration from: {}", pipeline_path);
-        let pipeline = Pipeline::from_file(&pipeline_path)?;
+        let mut pipeline = Pipeline::from_file(&pipeline_path)?;
         pipeline.run(&buf)?
     } else {
         // Use single encoder mode
@@ -106,15 +115,15 @@ fn encode() -> Result<(), String> {
 
         match encoder_type {
             EncoderType::Sgn => {
-                let encoder = SgnEncoderX64::new(seed, args.plain_decoder, args.encoding_count, args.save_registers);
+                let mut encoder = SgnEncoderX64::new(seed, args.plain_decoder, args.encoding_count, args.save_registers);
                 encoder.encode(&buf).map_err(|x| x.to_string())?
             }
             EncoderType::XorDynamic => {
-                let encoder = XorDynamicEncoderX64::new(seed);
-                encoder.encode(&buf).map_err(|x| x.to_string())?
+                let mut encoder = XorDynamicEncoderX64::new(seed);
+                encoder.encode(&buf).map_err(|x: xor_dynamic::encoder::XorDynamicEncoderError| x.to_string())?
             }
             EncoderType::Schema => {
-                let encoder = SchemaEncoderX64::new(seed);
+                let mut encoder = SchemaEncoderX64::new(seed);
                 encoder.encode(&buf).map_err(|x| x.to_string())?
             }
         }

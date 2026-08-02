@@ -16,7 +16,7 @@
 
 use std::error::Error;
 
-use rand::RngCore;
+use rand::rand_core::RngCore;
 
 pub trait Encoder {
     type Error: Sized + Error;

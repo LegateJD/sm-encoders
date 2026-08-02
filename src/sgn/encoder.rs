@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-use rand::rngs::ThreadRng;
-use rand_chacha::ChaCha20Rng;
+use rand::rngs::{ChaCha12Rng, ChaCha20Rng, ThreadRng};
 use thiserror::Error;
 
 use crate::{
@@ -37,11 +36,11 @@ pub enum ShikataGaNaiError {
     SchemaEncoder
 }
 
-pub type SgnEncoderX64 = SgnEncoder<X64CodeAssembler<ThreadRng>>;
+pub type SgnEncoderX64 = SgnEncoder<X64CodeAssembler<ChaCha12Rng>>;
 
-pub type SgnEncoderX32 = SgnEncoder<X32CodeAssembler<ThreadRng>>;
+pub type SgnEncoderX32 = SgnEncoder<X32CodeAssembler<ChaCha12Rng>>;
 
-pub type SgnEncoderAArch64 = SgnEncoder<AArch64CodeAssembler<ThreadRng>>;
+pub type SgnEncoderAArch64 = SgnEncoder<AArch64CodeAssembler<ChaCha12Rng>>;
 
 pub type SgnEncoderX64ChaCha = SgnEncoder<X64CodeAssembler<ChaCha20Rng>>;
 pub type SgnEncoderX32ChaCha = SgnEncoder<X32CodeAssembler<ChaCha20Rng>>;
@@ -57,7 +56,7 @@ pub struct SgnEncoder<AsmType: SgnDecoderStub> {
 }
 
 pub trait SgnDecoderStub {
-    fn get_sgn_decoder_stub(&self, seed: u8, payload_size: usize)
+    fn get_sgn_decoder_stub(&mut self, seed: u8, payload_size: usize)
         -> Result<Vec<u8>, ShikataGaNaiError>;
 }
 

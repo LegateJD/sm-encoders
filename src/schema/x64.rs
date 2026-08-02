@@ -16,8 +16,8 @@
 
 use byteorder::{BigEndian, ByteOrder};
 use dynasmrt::{dynasm, x64::X64Relocation, DynasmApi, DynasmError, DynasmLabelApi, VecAssembler};
-use rand::RngCore;
-use crate::{obfuscation::{common::{CallOver, GarbageInstructions}, x64::X64CodeAssembler}, schema::encoder::{Operation, SchemaDecoderStub, SchemaEncoderError, SchemaInstruction}, x64_arch::registers::{get_save_random_general_purpose_register, RSP_FULL}};
+use rand::rand_core::RngCore;
+use crate::{obfuscation::{common::{CallOver, GarbageInstructions}, x64::X64CodeAssembler}, schema::encoder::{Operation, SchemaDecoderStub, SchemaEncoderError, SchemaInstruction}, x64_arch::registers::{RBP_FULL, RSP_FULL, get_save_random_general_purpose_register}};
 
 impl<RngType: RngCore> SchemaDecoderStub for X64CodeAssembler<RngType> {
     fn add_schema_decoder(
@@ -36,7 +36,7 @@ impl<RngType: RngCore> SchemaDecoderStub for X64CodeAssembler<RngType> {
         garbage = self.generate_garbage_instructions();
         payload.extend(garbage.into_iter());
 
-        let reg = get_save_random_general_purpose_register(&[RSP_FULL]);
+        let reg = get_save_random_general_purpose_register(&[RSP_FULL, RBP_FULL], &mut self.rng);
         let indexer_register_id = reg.quad as u8;
         dynasm!(assembler
             ; pop Rq(indexer_register_id)

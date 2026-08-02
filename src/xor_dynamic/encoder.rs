@@ -15,7 +15,7 @@
  */
 
 use std::{collections::HashSet};
-use rand::seq::SliceRandom;
+use rand::{rngs::ChaCha12Rng, seq::SliceRandom};
 use thiserror::Error;
 
 use crate::{
@@ -23,11 +23,11 @@ use crate::{
     obfuscation::{aarch64::AArch64CodeAssembler, x32::X32CodeAssembler, x64::X64CodeAssembler},
 };
 
-pub type XorDynamicEncoderX64 = XorDynamicEncoder<X64CodeAssembler<rand::rngs::ThreadRng>>;
+pub type XorDynamicEncoderX64 = XorDynamicEncoder<X64CodeAssembler<ChaCha12Rng>>;
 
-pub type XorDynamicEncoderX32 = XorDynamicEncoder<X32CodeAssembler<rand::rngs::ThreadRng>>;
+pub type XorDynamicEncoderX32 = XorDynamicEncoder<X32CodeAssembler<ChaCha12Rng>>;
 
-pub type XorDynamicEncoderAArch64 = XorDynamicEncoder<AArch64CodeAssembler<rand::rngs::ThreadRng>>;
+pub type XorDynamicEncoderAArch64 = XorDynamicEncoder<AArch64CodeAssembler<ChaCha12Rng>>;
 
 #[derive(Debug)]
 pub struct XorDynamicEncoder<AsmType: XorDynamicStub> {

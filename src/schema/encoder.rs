@@ -20,7 +20,7 @@ use dynasmrt::{dynasm, x64::X64Relocation, DynasmApi, DynasmLabelApi, VecAssembl
 
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use rand::{
-    Rng, distr::{Distribution, StandardUniform}, rngs::ThreadRng
+    Rng, RngExt, distr::{Distribution, StandardUniform}, rngs::{ChaCha12Rng, ThreadRng}
 };
 use thiserror::Error;
 
@@ -32,11 +32,11 @@ use crate::obfuscation::aarch64::AArch64CodeAssembler;
 use crate::obfuscation::x32::X32CodeAssembler;
 use crate::sgn::encoder::SgnEncoder;
 
-pub type SchemaEncoderX64 = SchemaEncoder<X64CodeAssembler<ThreadRng>>;
+pub type SchemaEncoderX64 = SchemaEncoder<X64CodeAssembler<ChaCha12Rng>>;
 
-pub type SchemaEncoderX32 = SchemaEncoder<X32CodeAssembler<ThreadRng>>;
+pub type SchemaEncoderX32 = SchemaEncoder<X32CodeAssembler<ChaCha12Rng>>;
 
-pub type SchemaEncoderAArch64 = SchemaEncoder<AArch64CodeAssembler<ThreadRng>>;
+pub type SchemaEncoderAArch64 = SchemaEncoder<AArch64CodeAssembler<ChaCha12Rng>>;
 
 #[derive(Error, Debug)]
 pub enum SchemaEncoderError {

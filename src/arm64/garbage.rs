@@ -18,21 +18,21 @@ use dynasmrt::{
     dynasm, relocations::Relocation, aarch64::Aarch64Relocation, DynasmApi,
     DynasmLabelApi, VecAssembler,
 };
-use rand::{seq::IndexedRandom, Rng};
+use rand::{Rng, rand_core::RngCore, seq::IndexedRandom};
 use crate::arm64::registers::{get_random_general_purpose_register, get_safe_random_general_purpose_register};
 
-pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 38] = [
-    |assembler| {
+pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>, &mut dyn RngCore); 38] = [
+    |assembler, rng| {
         dynasm!(assembler
             ; .arch aarch64
             ; nop
         );
     },
-    |assembler| {
+    |assembler, rng| {
         // msr nzcv, xzr
         assembler.extend(b"\x1f\x42\x1b\xd5");
     },
-    |assembler| {
+    |assembler, rng| {
 
         // mrs x0, nzcv
         // eor x0, x0, #0x20000000
@@ -42,20 +42,20 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
         assembler.extend(b"\x00\x00\x63\xd2");
         assembler.extend(b"\x00\x42\x1b\xd5");
     },
-    |assembler| {
+    |assembler, rng| {
         dynasm!(assembler
             ; .arch aarch64
             ; yield
         );
     },
-    |assembler| {
+    |assembler, rng| {
         dynasm!(assembler
             ; .arch aarch64
             ; cmp xzr, xzr
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -63,10 +63,10 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; mov X(register_id), X(register_id)
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let second_register =
-            get_safe_random_general_purpose_register(&[register.clone()]);
+            get_safe_random_general_purpose_register(&[register.clone()], rng);
         let register_id = register.x as u32;
         let second_register_id = second_register.x as u32;
 
@@ -76,8 +76,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; mov X(register_id), X(second_register_id)
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -85,8 +85,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; add XSP(register_id), XSP(register_id), 0
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -94,8 +94,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; sub XSP(register_id), XSP(register_id), 0
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -103,8 +103,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; and X(register_id), X(register_id), X(register_id)
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -112,8 +112,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; orr X(register_id), X(register_id), X(register_id)
         );
     },
-    /*|assembler| {
-        let register = get_random_general_purpose_register();
+    /*|assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -121,8 +121,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; eor XSP(register_id), X(register_id), 0
         );
     },*/
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -130,8 +130,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; lsl X(register_id), X(register_id), #0
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -139,8 +139,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; lsr X(register_id), X(register_id), 0
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -148,8 +148,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; asr X(register_id), X(register_id), 0
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -157,7 +157,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; ror X(register_id), X(register_id), 0
         );
     },
-    |assembler| {
+    |assembler, rng| {
         let label = assembler.new_dynamic_label();
 
         dynasm!(assembler
@@ -166,8 +166,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; =>label
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -175,8 +175,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; cmp X(register_id), X(register_id)
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -184,8 +184,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; tst X(register_id), X(register_id)
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -193,8 +193,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; csel X(register_id), X(register_id), X(register_id), eq
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -203,8 +203,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
         );
     },
 
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -212,8 +212,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; cmn XSP(register_id), 0
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -221,20 +221,20 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; mul X(register_id), X(register_id), X(register_id)
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
         let mut rng = rand::rng();
-        let random_byte = rng.random::<u8>();
+        /*let random_byte = rng.random::<u8>();
 
         dynasm!(assembler
             ; .arch aarch64
             ; add XSP(register_id), XSP(register_id), random_byte as u32
             ; sub XSP(register_id), XSP(register_id), random_byte as u32
-        );
+        );*/
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -243,8 +243,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; rev X(register_id), X(register_id)
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -252,8 +252,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; csel X(register_id), X(register_id), X(register_id), hi
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -261,8 +261,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; csel X(register_id), X(register_id), X(register_id), lo
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -270,8 +270,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; csel X(register_id), X(register_id), X(register_id), cs
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -279,8 +279,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; csel X(register_id), X(register_id), X(register_id), gt
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -288,8 +288,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; csel X(register_id), X(register_id), X(register_id), lt
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -297,8 +297,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; csel X(register_id), X(register_id), X(register_id), vs
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -306,8 +306,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; csel X(register_id), X(register_id), X(register_id), mi
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -315,8 +315,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; csel X(register_id), X(register_id), X(register_id), hs
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -324,8 +324,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; csel X(register_id), X(register_id), X(register_id), ge
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -333,8 +333,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; csel X(register_id), X(register_id), X(register_id), le
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -342,8 +342,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; csel X(register_id), X(register_id), X(register_id), ls
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -351,8 +351,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; csel X(register_id), X(register_id), X(register_id), cc
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler
@@ -360,8 +360,8 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>); 
             ; csel X(register_id), X(register_id), X(register_id), vc
         );
     },
-    |assembler| {
-        let register = get_random_general_purpose_register();
+    |assembler, rng| {
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
 
         dynasm!(assembler

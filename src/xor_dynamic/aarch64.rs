@@ -15,7 +15,7 @@
  */
 
 use dynasmrt::{aarch64::Aarch64Relocation, dynasm, x64::X64Relocation, x86::X86Relocation, DynasmApi, DynasmError, DynasmLabelApi, VecAssembler};
-use rand::RngCore;
+use rand::rand_core::RngCore;
 
 use crate::{obfuscation::aarch64::AArch64CodeAssembler, xor_dynamic::encoder::{XorDynamicEncoderError, XorDynamicStub}};
 

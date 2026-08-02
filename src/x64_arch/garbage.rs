@@ -18,7 +18,7 @@ use dynasmrt::{
     dynasm, relocations::Relocation, x64::X64Relocation, x86::X86Relocation, DynasmApi,
     DynasmLabelApi, VecAssembler,
 };
-use rand::{Rng, RngCore, rngs::ThreadRng, seq::IndexedRandom};
+use rand::{Rng, RngExt, rand_core::RngCore, rngs::ThreadRng, seq::IndexedRandom};
 
 use crate::{
     utils::{rng::RngCoinFlip}, x64_arch::registers::get_random_general_purpose_register,
@@ -75,7 +75,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -83,7 +83,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -91,7 +91,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -99,7 +99,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -107,7 +107,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -115,7 +115,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -123,7 +123,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -131,7 +131,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -139,7 +139,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -147,7 +147,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -155,7 +155,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -163,7 +163,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -171,7 +171,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -179,7 +179,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -187,7 +187,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -195,7 +195,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -203,7 +203,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -211,7 +211,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -219,7 +219,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -227,7 +227,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -235,7 +235,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -243,7 +243,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -251,7 +251,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -259,7 +259,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -267,7 +267,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -275,7 +275,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -283,7 +283,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -291,7 +291,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -299,7 +299,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -307,7 +307,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -315,7 +315,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -323,7 +323,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -331,7 +331,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -339,7 +339,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -347,7 +347,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -355,7 +355,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -363,7 +363,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -371,7 +371,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -379,7 +379,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -387,7 +387,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -395,7 +395,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -403,7 +403,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -411,7 +411,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -419,7 +419,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -427,7 +427,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -435,7 +435,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -443,7 +443,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -451,7 +451,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -472,7 +472,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -486,7 +486,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -500,7 +500,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -514,7 +514,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
 
         dynasm!(assembler
@@ -528,7 +528,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
         let random_byte = rng.random::<u8>();
 
@@ -543,7 +543,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
         let random_byte = rng.random::<u8>();
 
@@ -558,7 +558,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
         let random_byte = rng.random::<u8>();
 
@@ -573,7 +573,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, rng| {
-        let register = get_random_general_purpose_register();
+        let register = get_random_general_purpose_register(rng);
         let register_id = register.quad as u8;
         let random_byte = rng.random::<u8>();
 

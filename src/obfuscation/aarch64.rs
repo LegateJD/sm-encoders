@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-use rand::{RngCore, rngs::ThreadRng};
+use rand::{rand_core::RngCore, rngs::ThreadRng};
 
 use crate::{core::encoder::AsmInit, obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump}, utils::rng::RngCoinFlip, x64_arch::garbage::generate_garbage_x64_assembly};
 
 pub struct AArch64CodeAssembler<RngType: RngCore> {
-    rng: RngType
+    pub rng: RngType
 }
 
 impl AsmInit for AArch64CodeAssembler<ThreadRng> {

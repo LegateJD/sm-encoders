@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-use rand::seq::IndexedRandom;
+use rand::{rand_core::RngCore, seq::IndexedRandom};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Arm64Register {
@@ -148,19 +148,17 @@ pub const CALLEE_SAVED_REGISTERS: &[Arm64Register] = &[
     X26_FULL, X27_FULL, X28_FULL, X29_FULL, X30_FULL,
 ];
 
-pub fn get_random_general_purpose_register() -> &'static Arm64Register {
-    let mut rng = rand::thread_rng();
-    GENERAL_PURPOSE_REGISTERS.choose(&mut rng).unwrap()
+pub fn get_random_general_purpose_register<T: RngCore + ?Sized>(rng: &mut T) -> &'static Arm64Register {
+    GENERAL_PURPOSE_REGISTERS.choose(rng).unwrap()
 }
 
-pub fn get_safe_random_general_purpose_register(excludes: &[Arm64Register]) -> &'static Arm64Register {
-    let mut rng = rand::thread_rng();
+pub fn get_safe_random_general_purpose_register<T: RngCore + ?Sized>(excludes: &[Arm64Register], rng: &mut T) -> &'static Arm64Register {
     let filtered: Vec<_> = GENERAL_PURPOSE_REGISTERS
         .iter()
         .filter(|reg| !excludes.contains(reg))
         .collect();
 
-    filtered.choose(&mut rng).expect("No available registers")
+    filtered.choose(rng).expect("No available registers")
 }
 
 impl Arm64Register {

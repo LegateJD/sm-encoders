@@ -1,4 +1,4 @@
-use rand::Rng;
+use rand::{Rng, RngExt};
 
 pub trait RngCoinFlip: Rng {
     fn coin_flip(&mut self) -> bool {
