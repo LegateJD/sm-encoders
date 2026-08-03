@@ -16,10 +16,10 @@
 
 use byteorder::{BigEndian, ByteOrder};
 use dynasmrt::{dynasm, x64::X64Relocation, DynasmApi, DynasmError, DynasmLabelApi, VecAssembler};
-use rand::rand_core::RngCore;
+use rand::Rng;
 use crate::{obfuscation::{common::{CallOver, GarbageInstructions}, x64::X64CodeAssembler}, schema::encoder::{Operation, SchemaDecoderStub, SchemaEncoderError, SchemaInstruction}, x64_arch::registers::{RBP_FULL, RSP_FULL, get_save_random_general_purpose_register}};
 
-impl<RngType: RngCore> SchemaDecoderStub for X64CodeAssembler<RngType> {
+impl<RngType: Rng> SchemaDecoderStub for X64CodeAssembler<RngType> {
     fn add_schema_decoder(
         &mut self,
         mut payload: Vec<u8>,

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-use rand::{rand_core::RngCore, rngs::ThreadRng};
+use rand::{Rng, rngs::ThreadRng};
 
 use crate::{core::encoder::AsmInit, obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump}, utils::rng::RngCoinFlip, x64_arch::garbage::generate_garbage_x64_assembly};
 
-pub struct AArch64CodeAssembler<RngType: RngCore> {
+pub struct AArch64CodeAssembler<RngType: Rng> {
     pub rng: RngType
 }
 
@@ -29,7 +29,7 @@ impl AsmInit for AArch64CodeAssembler<ThreadRng> {
     }
 }
 
-impl<RngType: RngCore> GarbageJump for AArch64CodeAssembler<RngType> {
+impl<RngType: Rng> GarbageJump for AArch64CodeAssembler<RngType> {
     fn add_jmp_over(&self, payload: &[u8]) -> Vec<u8> {
         let words = (payload.len() + 3) / 4 + 1;
         let imm26 = (words & 0x3FFFFFF) as u32;
@@ -49,7 +49,7 @@ impl<RngType: RngCore> GarbageJump for AArch64CodeAssembler<RngType> {
     }
 }
 
-impl<RngType: RngCore> CallOver for AArch64CodeAssembler<RngType> {
+impl<RngType: Rng> CallOver for AArch64CodeAssembler<RngType> {
     fn add_call_over(&self, payload: Vec<u8>) -> Vec<u8> {
         let words = ((payload.len() + 3) / 4) + 2;
 
@@ -63,7 +63,7 @@ impl<RngType: RngCore> CallOver for AArch64CodeAssembler<RngType> {
     }
 }
 
-impl<RngType: RngCore> GarbageInstructions for AArch64CodeAssembler<RngType> {
+impl<RngType: Rng> GarbageInstructions for AArch64CodeAssembler<RngType> {
     fn generate_garbage_instructions(&mut self) -> Vec<u8> {
         let mut garbage_bin = self.generate_garbage_assembly();
 
@@ -82,7 +82,7 @@ impl<RngType: RngCore> GarbageInstructions for AArch64CodeAssembler<RngType> {
     }
 }
 
-impl<RngType: RngCore> GarbageAssembly for AArch64CodeAssembler<RngType> {
+impl<RngType: Rng> GarbageAssembly for AArch64CodeAssembler<RngType> {
     fn generate_garbage_assembly(&mut self) -> Vec<u8> {
         generate_garbage_x64_assembly(&mut self.rng)
     }

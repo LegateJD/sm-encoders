@@ -18,10 +18,10 @@ use dynasmrt::{
     dynasm, relocations::Relocation, aarch64::Aarch64Relocation, DynasmApi,
     DynasmLabelApi, VecAssembler,
 };
-use rand::{Rng, rand_core::RngCore, seq::IndexedRandom};
+use rand::{Rng};
 use crate::arm64::registers::{get_random_general_purpose_register, get_safe_random_general_purpose_register};
 
-pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>, &mut dyn RngCore); 38] = [
+pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>, &mut dyn Rng); 38] = [
     |assembler, rng| {
         dynasm!(assembler
             ; .arch aarch64

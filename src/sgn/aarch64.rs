@@ -15,12 +15,12 @@
  */
 
 use dynasmrt::{aarch64::Aarch64Relocation, dynasm, x64::X64Relocation, x86::X86Relocation, DynasmApi, DynasmError, DynasmLabelApi, VecAssembler};
-use rand::rand_core::RngCore;
+use rand::Rng;
 
 use crate::{obfuscation::{aarch64::AArch64CodeAssembler, x32::X32CodeAssembler}, sgn::encoder::{SgnDecoderStub, ShikataGaNaiError}};
 use crate::arm64::registers::{get_random_general_purpose_register, get_safe_random_general_purpose_register};
 
-impl<RngType: RngCore> SgnDecoderStub for AArch64CodeAssembler<RngType> {
+impl<RngType: Rng> SgnDecoderStub for AArch64CodeAssembler<RngType> {
     fn get_sgn_decoder_stub(
         &mut self,
         seed: u8,

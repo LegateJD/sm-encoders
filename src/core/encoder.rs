@@ -16,7 +16,7 @@
 
 use std::error::Error;
 
-use rand::rand_core::RngCore;
+use rand::{Rng};
 
 pub trait Encoder {
     type Error: Sized + Error;
@@ -38,7 +38,7 @@ pub trait AsmInit {
     fn new() -> Self;
 }
 
-pub trait AsmInitWithRng<RngType: RngCore> {
+pub trait AsmInitWithRng<RngType: Rng> {
     fn new_with_rng(rng: RngType) -> Self;
 }
 

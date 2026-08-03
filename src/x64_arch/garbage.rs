@@ -18,16 +18,16 @@ use dynasmrt::{
     dynasm, relocations::Relocation, x64::X64Relocation, x86::X86Relocation, DynasmApi,
     DynasmLabelApi, VecAssembler,
 };
-use rand::{Rng, RngExt, rand_core::RngCore, rngs::ThreadRng, seq::IndexedRandom};
+use rand::{Rng, RngExt, rngs::ThreadRng, seq::IndexedRandom};
 
 use crate::{
     utils::{rng::RngCoinFlip}, x64_arch::registers::get_random_general_purpose_register,
 };
 
-trait SuperRng: RngCore + RngCoinFlip {}
+trait SuperRng: Rng + RngCoinFlip {}
 
 
-pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut dyn RngCore); 66] = [
+pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut dyn Rng); 66] = [
     |assembler, rng| {
         dynasm!(assembler
             ; nop
@@ -589,7 +589,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
     },
 ];
 
-pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>, &mut dyn RngCore); 30] = [
+pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>, &mut dyn Rng); 30] = [
     |assembler, rng| {
         let label = assembler.new_dynamic_label();
 
@@ -982,7 +982,7 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>, &mut
     },
 ];
 
-pub fn generate_garbage_x64_assembly<T: RngCore>(rng: &mut T) -> Vec<u8> {
+pub fn generate_garbage_x64_assembly<T: Rng>(rng: &mut T) -> Vec<u8> {
     let mut assembler = VecAssembler::<X64Relocation>::new(0);
     get_random_safe_assembly(&mut assembler, rng);
     let result = assembler.finalize().unwrap();
@@ -990,7 +990,7 @@ pub fn generate_garbage_x64_assembly<T: RngCore>(rng: &mut T) -> Vec<u8> {
     result
 }
 
-pub fn generate_garbage_x32_assembly<T: RngCore>(rng: &mut T) -> Vec<u8> {
+pub fn generate_garbage_x32_assembly<T: Rng>(rng: &mut T) -> Vec<u8> {
     let mut assembler = VecAssembler::<X64Relocation>::new(0);
     get_random_safe_assembly(&mut assembler, rng);
     let result = assembler.finalize().unwrap();
@@ -998,7 +998,7 @@ pub fn generate_garbage_x32_assembly<T: RngCore>(rng: &mut T) -> Vec<u8> {
     result
 }
 
-fn get_random_safe_assembly(assembler: &mut VecAssembler<X64Relocation>, rng: &mut dyn RngCore) {
+fn get_random_safe_assembly(assembler: &mut VecAssembler<X64Relocation>, rng: &mut dyn Rng) {
     if rng.coin_flip() {
         return;
     }

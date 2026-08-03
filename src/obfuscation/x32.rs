@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-use rand::{rand_core::RngCore, rngs::ThreadRng};
+use rand::{ Rng, rngs::ThreadRng};
 
 use crate::{core::encoder::AsmInit, obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump}, utils::rng::RngCoinFlip, x64_arch::garbage::generate_garbage_x32_assembly};
 
-pub struct X32CodeAssembler<RngType: RngCore> {
+pub struct X32CodeAssembler<RngType: Rng> {
     pub rng: RngType
 }
 
@@ -29,7 +29,7 @@ impl AsmInit for X32CodeAssembler<ThreadRng> {
     }
 }
 
-impl<RngType: RngCore> GarbageJump for X32CodeAssembler<RngType> {
+impl<RngType: Rng> GarbageJump for X32CodeAssembler<RngType> {
     fn add_jmp_over(&self, payload: &[u8]) -> Vec<u8> {
         let len = payload.len() as i32 + 2;
         let mut bin = vec![0xE9u8];
@@ -48,7 +48,7 @@ impl<RngType: RngCore> GarbageJump for X32CodeAssembler<RngType> {
     }
 }
 
-impl<RngType: RngCore> CallOver for X32CodeAssembler<RngType> {
+impl<RngType: Rng> CallOver for X32CodeAssembler<RngType> {
     fn add_call_over(&self, payload: Vec<u8>) -> Vec<u8> {
         let len = payload.len() as i32;
         let mut bin = vec![0xE8u8];
@@ -59,7 +59,7 @@ impl<RngType: RngCore> CallOver for X32CodeAssembler<RngType> {
     }
 }
 
-impl<RngType: RngCore> GarbageInstructions for X32CodeAssembler<RngType> {
+impl<RngType: Rng> GarbageInstructions for X32CodeAssembler<RngType> {
     fn generate_garbage_instructions(&mut self) -> Vec<u8> {
         let mut garbage_bin = self.generate_garbage_assembly();
 
@@ -78,7 +78,7 @@ impl<RngType: RngCore> GarbageInstructions for X32CodeAssembler<RngType> {
     }
 }
 
-impl<RngType: RngCore> GarbageAssembly for X32CodeAssembler<RngType> {
+impl<RngType: Rng> GarbageAssembly for X32CodeAssembler<RngType> {
     fn generate_garbage_assembly(&mut self) -> Vec<u8> {
         generate_garbage_x32_assembly(&mut self.rng)
     }
