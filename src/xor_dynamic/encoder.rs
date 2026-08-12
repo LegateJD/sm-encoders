@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-use rand::{rngs::ChaCha12Rng, seq::SliceRandom};
+use rand::{rngs::ChaCha20Rng, seq::SliceRandom};
 use std::collections::HashSet;
 use thiserror::Error;
 
 use crate::{
-    core::encoder::{AsmInit, Encoder},
-    obfuscation::{aarch64::AArch64CodeAssembler, x32::X32CodeAssembler, x64::X64CodeAssembler},
+    core::encoder::{AsmInit, Encoder}, obfuscation::{aarch64::AArch64CodeAssembler, common::{AsmSaveRegisters, GarbageInstructions}, x32::X32CodeAssembler, x64::X64CodeAssembler},
 };
 
-pub type XorDynamicEncoderX64 = XorDynamicEncoder<X64CodeAssembler<ChaCha12Rng>>;
+pub type XorDynamicEncoderX64ChaCha = XorDynamicEncoder<X64CodeAssembler<ChaCha20Rng>>;
 
-pub type XorDynamicEncoderX32 = XorDynamicEncoder<X32CodeAssembler<ChaCha12Rng>>;
+pub type XorDynamicEncoderX32ChaCha = XorDynamicEncoder<X32CodeAssembler<ChaCha20Rng>>;
 
-pub type XorDynamicEncoderAArch64 = XorDynamicEncoder<AArch64CodeAssembler<ChaCha12Rng>>;
+pub type XorDynamicEncoderAArch64 = XorDynamicEncoder<AArch64CodeAssembler<ChaCha20Rng>>;
 
 #[derive(Debug)]
 pub struct XorDynamicEncoder<AsmType: XorDynamicStub> {
     pub encoding_count: u32,
+    pub save_registers: bool,
     assembler: AsmType,
     stub_key_terminator: Vec<u8>,
     stub_payload_terminator: Vec<u8>,
@@ -53,7 +53,7 @@ pub enum XorDynamicEncoderError {
 }
 
 pub trait XorDynamicStub {
-    fn get_decoder_stub(&self) -> Result<Vec<u8>, XorDynamicEncoderError>;
+    fn get_decoder_stub(&mut self) -> Result<Vec<u8>, XorDynamicEncoderError>;
 }
 
 pub fn generate_key(
@@ -110,7 +110,7 @@ impl<AsmType> XorDynamicEncoder<AsmType>
 where
     AsmType: XorDynamicStub + AsmInit,
 {
-    pub fn new(encoding_count: u32) -> Self {
+    pub fn new(encoding_count: u32, save_registers: bool) -> Self {
         let assembler = AsmType::new();
         let stub_key_terminator = vec![0x41]; // ASCII 'A' symbol, used as a terminator for the key in the stub
         let stub_payload_terminator = vec![0x42, 0x42]; // ASCII 'B, B' symbol, used as a terminator for the payload in the stub
@@ -125,24 +125,97 @@ where
             stub_key_terminator,
             stub_payload_terminator,
             badchars,
+            save_registers
         }
+    }
+
+    pub fn builder() -> XorDynamicEncoderBuilder<AsmType> {
+        XorDynamicEncoderBuilder::default()
+    }
+}
+
+#[derive(Debug)]
+pub struct XorDynamicEncoderBuilder<AsmType> {
+    encoding_count: u32,
+    save_registers: bool,
+    _marker: std::marker::PhantomData<AsmType>,
+}
+
+impl<AsmType> Default for XorDynamicEncoderBuilder<AsmType> {
+    fn default() -> Self {
+        Self { encoding_count: 1, save_registers: false, _marker: std::marker::PhantomData }
+    }
+}
+
+impl<AsmType> XorDynamicEncoderBuilder<AsmType>
+where
+    AsmType: XorDynamicStub + AsmInit,
+{
+    pub fn set_encoding_count(mut self, count: u32) -> Self {
+        self.encoding_count = count;
+        self
+    }
+
+    pub fn set_save_registers(mut self, save: bool) -> Self {
+        self.save_registers = save;
+        self
+    }
+
+    pub fn build(self) -> XorDynamicEncoder<AsmType> {
+        XorDynamicEncoder::new(self.encoding_count, self.save_registers)
+    }
+
+    pub fn build_with_rng<RngType>(self, rng: RngType) -> XorDynamicEncoder<AsmType>
+    where
+        AsmType: crate::core::encoder::AsmInitWithRng<RngType>,
+        RngType: rand::Rng,
+    {
+        let assembler = AsmType::new_with_rng(rng);
+        let stub_key_terminator = vec![0x41];
+        let stub_payload_terminator = vec![0x42, 0x42];
+        let mut badchars: HashSet<u8> = HashSet::new();
+        badchars.insert(0x00);
+        badchars.insert(0x0a);
+        badchars.insert(0x0d);
+        XorDynamicEncoder { encoding_count: self.encoding_count, save_registers: self.save_registers, assembler, stub_key_terminator, stub_payload_terminator, badchars }
     }
 }
 
 impl<AsmType> Encoder for XorDynamicEncoder<AsmType>
 where
-    AsmType: XorDynamicStub + AsmInit,
+    AsmType: XorDynamicStub + AsmInit + AsmSaveRegisters + GarbageInstructions
 {
     fn encode(&mut self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
+        let mut data = payload.to_vec();
+
+        if self.save_registers {
+            let save_registers_suffix = self.assembler.get_save_registers_suffix();
+            data.extend(save_registers_suffix.iter());
+        }
+
         let mut full_binary = self.encode_recursive(&payload, self.encoding_count)?;
+
+        if self.save_registers {
+            let mut save_registers_prefix = self.assembler.get_save_registers_prefix();
+            save_registers_prefix.extend(full_binary.iter());
+            full_binary = save_registers_prefix;
+        }
+
         Ok(full_binary)
     }
 
     type Error = XorDynamicEncoderError;
 }
 
-impl<AsmType> XorDynamicEncoder<AsmType> where AsmType: XorDynamicStub + AsmInit {
-    fn encode_recursive(&mut self, payload: &[u8], iterations_remaining: u32) -> Result<Vec<u8>, XorDynamicEncoderError> {
+impl<AsmType> XorDynamicEncoder<AsmType>
+where
+    AsmType: XorDynamicStub + AsmInit + GarbageInstructions,
+{
+    fn encode_recursive(
+        &mut self,
+        payload: &[u8],
+        iterations_remaining: u32,
+    ) -> Result<Vec<u8>, XorDynamicEncoderError> {
         if iterations_remaining == 0 {
             return Ok(payload.to_vec());
         }
@@ -150,13 +223,13 @@ impl<AsmType> XorDynamicEncoder<AsmType> where AsmType: XorDynamicStub + AsmInit
         let badchars = self.badchars.clone();
         let stub = self.assembler.get_decoder_stub()?;
 
-        let stub_without_terms = stub
+        let stub_without_terminators = stub
             .windows(self.stub_key_terminator.len())
             .filter(|w| *w != self.stub_key_terminator.as_slice())
             .collect::<Vec<_>>()
             .concat();
 
-        let stub_cleaned = stub_without_terms
+        let stub_cleaned = stub_without_terminators
             .windows(self.stub_payload_terminator.len())
             .filter(|w| *w != self.stub_payload_terminator.as_slice())
             .collect::<Vec<_>>()
@@ -179,6 +252,9 @@ impl<AsmType> XorDynamicEncoder<AsmType> where AsmType: XorDynamicStub + AsmInit
         let payload_terminator = generate_payload_terminator(&encoded, &key_chars)?;
 
         let mut final_payload = Vec::new();
+
+        let garbage = self.assembler.generate_garbage_instructions();
+        final_payload.extend_from_slice(&garbage);
 
         let mut stub_replaced = stub.clone();
         stub_replaced =

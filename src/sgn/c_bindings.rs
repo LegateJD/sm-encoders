@@ -15,7 +15,7 @@
  */
 
 use crate::core::encoder::Encoder;
-use crate::sgn::encoder::SgnEncoderX64;
+use crate::sgn::encoder::SgnEncoderX64ChaChaRng;
 
 #[repr(C)]
 pub struct CByteArray {
@@ -30,8 +30,8 @@ pub extern "C" fn sgn_encoder_x64_new(
     plain_decoder: bool,
     encoding_count: u32,
     save_registers: bool
-) -> *mut SgnEncoderX64 {
-    let encoder = Box::new(SgnEncoderX64::builder()
+) -> *mut SgnEncoderX64ChaChaRng {
+    let encoder = Box::new(SgnEncoderX64ChaChaRng::builder()
         .set_seed(seed)
         .set_plain_decoder(plain_decoder)
         .set_encoding_count(encoding_count)
@@ -41,7 +41,7 @@ pub extern "C" fn sgn_encoder_x64_new(
 }
 
 #[no_mangle]
-pub extern "C" fn sgn_encoder_x64_free(encoder: *mut SgnEncoderX64) {
+pub extern "C" fn sgn_encoder_x64_free(encoder: *mut SgnEncoderX64ChaChaRng) {
     if !encoder.is_null() {
         unsafe {
             drop(Box::from_raw(encoder));
@@ -51,7 +51,7 @@ pub extern "C" fn sgn_encoder_x64_free(encoder: *mut SgnEncoderX64) {
 
 #[no_mangle]
 pub extern "C" fn sgn_encoder_x64_encode(
-    encoder: *mut SgnEncoderX64,
+    encoder: *mut SgnEncoderX64ChaChaRng,
     payload: *const u8,
     payload_len: usize,
     out: *mut CByteArray,

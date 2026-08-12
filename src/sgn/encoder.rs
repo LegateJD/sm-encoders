@@ -17,34 +17,28 @@
 use rand::rngs::{ChaCha12Rng, ChaCha20Rng, ThreadRng};
 use thiserror::Error;
 
-use crate::{
-    core::encoder::{AsmInit, Encoder},
-    obfuscation::{
-        x64::X64CodeAssembler
-    },
-};
 use crate::obfuscation::aarch64::AArch64CodeAssembler;
 use crate::obfuscation::common::{AsmSaveRegisters, GarbageInstructions};
 use crate::obfuscation::x32::X32CodeAssembler;
 use crate::schema::encoder::SchemaDecoderStub;
+use crate::{
+    core::encoder::{AsmInit, Encoder},
+    obfuscation::x64::X64CodeAssembler,
+};
 
 #[derive(Error, Debug)]
 pub enum ShikataGaNaiError {
     #[error("AssemblerError")]
     AssemblerError,
     #[error("Schema encoder error")]
-    SchemaEncoder
+    SchemaEncoder,
 }
 
-pub type SgnEncoderX64 = SgnEncoder<X64CodeAssembler<ChaCha12Rng>>;
-
-pub type SgnEncoderX32 = SgnEncoder<X32CodeAssembler<ChaCha12Rng>>;
-
-pub type SgnEncoderAArch64 = SgnEncoder<AArch64CodeAssembler<ChaCha12Rng>>;
-
-pub type SgnEncoderX64ChaCha = SgnEncoder<X64CodeAssembler<ChaCha20Rng>>;
-pub type SgnEncoderX32ChaCha = SgnEncoder<X32CodeAssembler<ChaCha20Rng>>;
-pub type SgnEncoderAArch64ChaCha = SgnEncoder<AArch64CodeAssembler<ChaCha20Rng>>;
+pub type SgnEncoderX64ChaCha12Rng = SgnEncoder<X64CodeAssembler<ChaCha12Rng>>;
+pub type SgnEncoderX64ChaChaRng = SgnEncoder<X64CodeAssembler<ChaCha20Rng>>;
+pub type SgnEncoderX32ChaChaRng = SgnEncoder<X32CodeAssembler<ChaCha20Rng>>;
+pub type SgnEncoderAArch64 = SgnEncoder<AArch64CodeAssembler<ChaCha20Rng>>;
+pub type SgnEncoderX64ThreadRng = SgnEncoder<X64CodeAssembler<ThreadRng>>;
 
 #[derive(Debug)]
 pub struct SgnEncoder<AsmType: SgnDecoderStub> {
@@ -56,20 +50,34 @@ pub struct SgnEncoder<AsmType: SgnDecoderStub> {
 }
 
 pub trait SgnDecoderStub {
-    fn get_sgn_decoder_stub(&mut self, seed: u8, payload_size: usize)
-        -> Result<Vec<u8>, ShikataGaNaiError>;
+    fn get_sgn_decoder_stub(
+        &mut self,
+        seed: u8,
+        payload_size: usize,
+    ) -> Result<Vec<u8>, ShikataGaNaiError>;
 }
 
 impl<AsmType> SgnEncoder<AsmType>
 where
-    AsmType: SgnDecoderStub + AsmInit
+    AsmType: SgnDecoderStub + AsmInit,
 {
     pub fn new(seed: u8, plain_decoder: bool, encoding_count: u32, save_registers: bool) -> Self {
         let assembler = AsmType::new();
 
-        Self { seed, assembler, plain_decoder, encoding_count, save_registers }
+        Self {
+            seed,
+            assembler,
+            plain_decoder,
+            encoding_count,
+            save_registers,
+        }
     }
+}
 
+impl<AsmType> SgnEncoder<AsmType>
+where
+    AsmType: SgnDecoderStub,
+{
     pub fn builder() -> SgnEncoderBuilder<AsmType> {
         SgnEncoderBuilder::default()
     }
@@ -86,13 +94,19 @@ pub struct SgnEncoderBuilder<AsmType> {
 
 impl<AsmType> Default for SgnEncoderBuilder<AsmType> {
     fn default() -> Self {
-        Self { seed: 0, plain_decoder: false, encoding_count: 1, save_registers: false, _marker: std::marker::PhantomData }
+        Self {
+            seed: 0,
+            plain_decoder: false,
+            encoding_count: 1,
+            save_registers: false,
+            _marker: std::marker::PhantomData,
+        }
     }
 }
 
 impl<AsmType> SgnEncoderBuilder<AsmType>
 where
-    AsmType: SgnDecoderStub + AsmInit,
+    AsmType: SgnDecoderStub,
 {
     pub fn set_seed(mut self, seed: u8) -> Self {
         self.seed = seed;
@@ -114,9 +128,35 @@ where
         self
     }
 
+    pub fn build_with_rng<RngType>(self, rng: RngType) -> SgnEncoder<AsmType>
+    where
+        AsmType: crate::core::encoder::AsmInitWithRng<RngType>,
+        RngType: rand::Rng,
+    {
+        let assembler = AsmType::new_with_rng(rng);
+        SgnEncoder {
+            seed: self.seed,
+            assembler,
+            plain_decoder: self.plain_decoder,
+            encoding_count: self.encoding_count,
+            save_registers: self.save_registers,
+        }
+    }
+}
+
+impl<AsmType> SgnEncoderBuilder<AsmType>
+where
+    AsmType: SgnDecoderStub + AsmInit,
+{
     pub fn build(self) -> SgnEncoder<AsmType> {
         let assembler = AsmType::new();
-        SgnEncoder { seed: self.seed, assembler, plain_decoder: self.plain_decoder, encoding_count: self.encoding_count, save_registers: self.save_registers }
+        SgnEncoder {
+            seed: self.seed,
+            assembler,
+            plain_decoder: self.plain_decoder,
+            encoding_count: self.encoding_count,
+            save_registers: self.save_registers,
+        }
     }
 }
 
@@ -128,7 +168,7 @@ impl From<crate::schema::encoder::SchemaEncoderError> for ShikataGaNaiError {
 
 impl<AsmType> Encoder for SgnEncoder<AsmType>
 where
-    AsmType: SgnDecoderStub + AsmInit + SchemaDecoderStub + GarbageInstructions + AsmSaveRegisters
+    AsmType: SgnDecoderStub + AsmInit + SchemaDecoderStub + GarbageInstructions + AsmSaveRegisters,
 {
     type Error = ShikataGaNaiError;
 
@@ -154,9 +194,13 @@ where
 
 impl<AsmType> SgnEncoder<AsmType>
 where
-    AsmType: SgnDecoderStub + AsmInit + SchemaDecoderStub + GarbageInstructions + AsmSaveRegisters
+    AsmType: SgnDecoderStub + AsmInit + SchemaDecoderStub + GarbageInstructions + AsmSaveRegisters,
 {
-    fn encode_recursive(&mut self, payload: &[u8], iterations_remaining: u32) -> Result<Vec<u8>, ShikataGaNaiError> {
+    fn encode_recursive(
+        &mut self,
+        payload: &[u8],
+        iterations_remaining: u32,
+    ) -> Result<Vec<u8>, ShikataGaNaiError> {
         if iterations_remaining == 0 {
             return Ok(payload.to_vec());
         }
@@ -173,7 +217,9 @@ where
             let schema_size = (full_binary.len() - data.len()) / 4 + 1;
             let random_schema = crate::schema::encoder::new_cipher_schema(schema_size);
             full_binary = crate::schema::encoder::schema_cipher(full_binary, &random_schema);
-            full_binary = self.assembler.add_schema_decoder(full_binary, &random_schema)?;
+            full_binary = self
+                .assembler
+                .add_schema_decoder(full_binary, &random_schema)?;
         }
 
         self.encode_recursive(&full_binary, iterations_remaining - 1)

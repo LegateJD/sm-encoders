@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-use rand::{Rng, SeedableRng, rngs::{ChaCha12Rng, ThreadRng}};
+use rand::{Rng, SeedableRng, rngs::{ChaCha12Rng, ChaCha20Rng, ThreadRng}};
 
 use crate::{
     core::encoder::{AsmInit, AsmInitWithRng}, obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump}, utils::rng::RngCoinFlip, x64_arch::garbage::generate_garbage_x64_assembly
@@ -35,6 +35,13 @@ impl AsmInit for X64CodeAssembler<ThreadRng> {
 impl AsmInit for X64CodeAssembler<ChaCha12Rng> {
     fn new() -> Self {
         let rng = ChaCha12Rng::seed_from_u64(7547458);
+        X64CodeAssembler { rng: rng }
+    }
+}
+
+impl AsmInit for X64CodeAssembler<ChaCha20Rng> {
+    fn new() -> Self {
+        let rng = ChaCha20Rng::seed_from_u64(7547458);
         X64CodeAssembler { rng: rng }
     }
 }

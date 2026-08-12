@@ -17,8 +17,8 @@
 use crate::core::encoder::Encoder;
 use crate::pipeline::parser::{Architecture, PipelineConfig, StageConfig, StageType};
 use crate::schema::encoder::SchemaEncoderX64;
-use crate::sgn::encoder::SgnEncoderX64;
-use crate::xor_dynamic::encoder::XorDynamicEncoderX64;
+use crate::sgn::encoder::{SgnEncoderX64ChaChaRng, SgnEncoderX64ThreadRng};
+use crate::xor_dynamic::encoder::XorDynamicEncoderX64ChaCha;
 
 /// A processing stage that transforms bytes.
 pub trait Stage {
@@ -98,7 +98,7 @@ fn create_stage_from_config(config: &StageConfig) -> Result<Box<dyn Stage>, Stri
 fn create_sgn_stage(config: &StageConfig) -> Result<Box<dyn Stage>, String> {
     match config.config.architecture {
             Architecture::X64 => {
-            let encoder = SgnEncoderX64::builder()
+            let encoder = SgnEncoderX64ChaChaRng::builder()
                 .set_seed(config.config.seed)
                 .set_plain_decoder(config.config.plain_decoder)
                 .set_encoding_count(config.config.encoding_count)
@@ -121,7 +121,10 @@ fn create_sgn_stage(config: &StageConfig) -> Result<Box<dyn Stage>, String> {
 fn create_xor_dynamic_stage(config: &StageConfig) -> Result<Box<dyn Stage>, String> {
     match config.config.architecture {
         Architecture::X64 => {
-            let encoder = XorDynamicEncoderX64::new(config.config.encoding_count);
+            let encoder = XorDynamicEncoderX64ChaCha::builder()
+                .set_encoding_count(config.config.encoding_count)
+                .set_save_registers(config.config.save_registers)
+                .build();
             Ok(Box::new(EncoderStage { encoder }))
         }
         _ => Err(format!("Unsupported architecture for XorDynamic: {}", config.config.architecture.as_str())),

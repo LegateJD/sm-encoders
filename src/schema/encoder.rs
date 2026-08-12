@@ -20,7 +20,7 @@ use dynasmrt::{dynasm, x64::X64Relocation, DynasmApi, DynasmLabelApi, VecAssembl
 
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use rand::{
-    Rng, RngExt, distr::{Distribution, StandardUniform}, rngs::{ChaCha12Rng, ThreadRng}
+    Rng, RngExt, distr::{Distribution, StandardUniform}, rngs::{ChaCha12Rng, ChaCha20Rng, ThreadRng}
 };
 use thiserror::Error;
 
@@ -33,6 +33,8 @@ use crate::obfuscation::x32::X32CodeAssembler;
 use crate::sgn::encoder::SgnEncoder;
 
 pub type SchemaEncoderX64 = SchemaEncoder<X64CodeAssembler<ChaCha12Rng>>;
+pub type SchemaEncoderX64ChaCha = SchemaEncoder<X64CodeAssembler<ChaCha20Rng>>;
+pub type SchemaEncoderX64Thread = SchemaEncoder<X64CodeAssembler<ThreadRng>>;
 
 pub type SchemaEncoderX32 = SchemaEncoder<X32CodeAssembler<ChaCha12Rng>>;
 
@@ -77,9 +79,23 @@ impl<AsmType> SchemaEncoder<AsmType>
 where
     AsmType: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + SchemaDecoderStub + AsmInit
 {
-    pub fn new(seed: u8) -> Self {
+    pub fn new(_seed: u8) -> Self {
         let assembler = AsmType::new();
 
+        Self { assembler }
+    }
+}
+
+impl<AsmType> SchemaEncoder<AsmType>
+where
+    AsmType: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + SchemaDecoderStub,
+{
+    pub fn new_with_rng<RngType>(rng: RngType) -> Self
+    where
+        AsmType: crate::core::encoder::AsmInitWithRng<RngType>,
+        RngType: rand::Rng,
+    {
+        let assembler = AsmType::new_with_rng(rng);
         Self { assembler }
     }
 }
