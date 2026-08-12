@@ -97,8 +97,13 @@ fn create_stage_from_config(config: &StageConfig) -> Result<Box<dyn Stage>, Stri
 
 fn create_sgn_stage(config: &StageConfig) -> Result<Box<dyn Stage>, String> {
     match config.config.architecture {
-        Architecture::X64 => {
-            let encoder = SgnEncoderX64::new(config.config.seed, config.config.plain_decoder, config.config.encoding_count, config.config.save_registers);
+            Architecture::X64 => {
+            let encoder = SgnEncoderX64::builder()
+                .set_seed(config.config.seed)
+                .set_plain_decoder(config.config.plain_decoder)
+                .set_encoding_count(config.config.encoding_count)
+                .set_save_registers(config.config.save_registers)
+                .build();
             Ok(Box::new(EncoderStage { encoder }))
         }
         _ => unreachable!()
@@ -116,7 +121,7 @@ fn create_sgn_stage(config: &StageConfig) -> Result<Box<dyn Stage>, String> {
 fn create_xor_dynamic_stage(config: &StageConfig) -> Result<Box<dyn Stage>, String> {
     match config.config.architecture {
         Architecture::X64 => {
-            let encoder = XorDynamicEncoderX64::new(config.config.seed);
+            let encoder = XorDynamicEncoderX64::new(config.config.encoding_count);
             Ok(Box::new(EncoderStage { encoder }))
         }
         _ => Err(format!("Unsupported architecture for XorDynamic: {}", config.config.architecture.as_str())),

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-use std::{collections::HashSet};
 use rand::{rngs::ChaCha12Rng, seq::SliceRandom};
+use std::collections::HashSet;
 use thiserror::Error;
 
 use crate::{
@@ -31,6 +31,7 @@ pub type XorDynamicEncoderAArch64 = XorDynamicEncoder<AArch64CodeAssembler<ChaCh
 
 #[derive(Debug)]
 pub struct XorDynamicEncoder<AsmType: XorDynamicStub> {
+    pub encoding_count: u32,
     assembler: AsmType,
     stub_key_terminator: Vec<u8>,
     stub_payload_terminator: Vec<u8>,
@@ -109,16 +110,17 @@ impl<AsmType> XorDynamicEncoder<AsmType>
 where
     AsmType: XorDynamicStub + AsmInit,
 {
-    pub fn new(seed: u8) -> Self {
+    pub fn new(encoding_count: u32) -> Self {
         let assembler = AsmType::new();
-        let stub_key_terminator = vec![0x41];
-        let stub_payload_terminator = vec![0x42, 0x42];
+        let stub_key_terminator = vec![0x41]; // ASCII 'A' symbol, used as a terminator for the key in the stub
+        let stub_payload_terminator = vec![0x42, 0x42]; // ASCII 'B, B' symbol, used as a terminator for the payload in the stub
         let mut badchars: HashSet<u8> = HashSet::new();
         badchars.insert(0x00);
         badchars.insert(0x0a);
         badchars.insert(0x0d);
 
         Self {
+            encoding_count,
             assembler,
             stub_key_terminator,
             stub_payload_terminator,
@@ -131,7 +133,20 @@ impl<AsmType> Encoder for XorDynamicEncoder<AsmType>
 where
     AsmType: XorDynamicStub + AsmInit,
 {
-    fn encode(&mut self, buf: &[u8]) -> Result<Vec<u8>, Self::Error> {
+    fn encode(&mut self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
+        let mut full_binary = self.encode_recursive(&payload, self.encoding_count)?;
+        Ok(full_binary)
+    }
+
+    type Error = XorDynamicEncoderError;
+}
+
+impl<AsmType> XorDynamicEncoder<AsmType> where AsmType: XorDynamicStub + AsmInit {
+    fn encode_recursive(&mut self, payload: &[u8], iterations_remaining: u32) -> Result<Vec<u8>, XorDynamicEncoderError> {
+        if iterations_remaining == 0 {
+            return Ok(payload.to_vec());
+        }
+
         let badchars = self.badchars.clone();
         let stub = self.assembler.get_decoder_stub()?;
 
@@ -152,36 +167,40 @@ where
         }
 
         let key_chars: Vec<u8> = (1u8..=255).filter(|c| !badchars.contains(c)).collect();
-        let key = generate_key(buf, &badchars, &key_chars)?;
-        let key_term = generate_key_terminator(&key, &key_chars)?;
+        let key = generate_key(payload, &badchars, &key_chars)?;
+        let key_terminator = generate_key_terminator(&key, &key_chars)?;
 
-        let mut encoded: Vec<u8> = Vec::with_capacity(buf.len());
+        let mut encoded: Vec<u8> = Vec::with_capacity(payload.len());
 
-        for (pos, &b) in buf.iter().enumerate() {
+        for (pos, &b) in payload.iter().enumerate() {
             encoded.push(b ^ key[pos % key.len()]);
         }
 
-        let payload_term = generate_payload_terminator(&encoded, &key_chars)?;
+        let payload_terminator = generate_payload_terminator(&encoded, &key_chars)?;
 
         let mut final_payload = Vec::new();
 
         let mut stub_replaced = stub.clone();
-        stub_replaced = replace_subsequence(&stub_replaced, &self.stub_key_terminator, &[key_term]);
-        stub_replaced = replace_subsequence(&stub_replaced, &self.stub_payload_terminator, &payload_term);
+        stub_replaced =
+            replace_subsequence(&stub_replaced, &self.stub_key_terminator, &[key_terminator]);
+        stub_replaced = replace_subsequence(
+            &stub_replaced,
+            &self.stub_payload_terminator,
+            &payload_terminator,
+        );
         final_payload.extend_from_slice(&stub_replaced);
         final_payload.extend_from_slice(&key);
-        final_payload.push(key_term);
+        final_payload.push(key_terminator);
         final_payload.extend_from_slice(&encoded);
-        final_payload.extend_from_slice(&payload_term);
+        final_payload.extend_from_slice(&payload_terminator);
 
         if has_badchars(&final_payload, &badchars) {
             return Err(XorDynamicEncoderError::BadCharacters);
         }
 
-        Ok(final_payload)
+        let full_binary = final_payload;
+        self.encode_recursive(&full_binary, iterations_remaining - 1)
     }
-
-    type Error = XorDynamicEncoderError;
 }
 
 fn generate_key_terminator(key: &[u8], key_chars: &[u8]) -> Result<u8, XorDynamicEncoderError> {
@@ -195,7 +214,10 @@ fn generate_key_terminator(key: &[u8], key_chars: &[u8]) -> Result<u8, XorDynami
         .ok_or(XorDynamicEncoderError::NonExistentKeyTerminator)
 }
 
-fn generate_payload_terminator(encoded: &[u8], key_chars: &[u8]) -> Result<Vec<u8>, XorDynamicEncoderError> {
+fn generate_payload_terminator(
+    encoded: &[u8],
+    key_chars: &[u8],
+) -> Result<Vec<u8>, XorDynamicEncoderError> {
     let mut rng = rand::rng();
     let mut pairs: Vec<(u8, u8)> = key_chars
         .iter()

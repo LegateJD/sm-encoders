@@ -69,6 +69,55 @@ where
 
         Self { seed, assembler, plain_decoder, encoding_count, save_registers }
     }
+
+    pub fn builder() -> SgnEncoderBuilder<AsmType> {
+        SgnEncoderBuilder::default()
+    }
+}
+
+#[derive(Debug)]
+pub struct SgnEncoderBuilder<AsmType> {
+    seed: u8,
+    plain_decoder: bool,
+    encoding_count: u32,
+    save_registers: bool,
+    _marker: std::marker::PhantomData<AsmType>,
+}
+
+impl<AsmType> Default for SgnEncoderBuilder<AsmType> {
+    fn default() -> Self {
+        Self { seed: 0, plain_decoder: false, encoding_count: 1, save_registers: false, _marker: std::marker::PhantomData }
+    }
+}
+
+impl<AsmType> SgnEncoderBuilder<AsmType>
+where
+    AsmType: SgnDecoderStub + AsmInit,
+{
+    pub fn set_seed(mut self, seed: u8) -> Self {
+        self.seed = seed;
+        self
+    }
+
+    pub fn set_plain_decoder(mut self, plain: bool) -> Self {
+        self.plain_decoder = plain;
+        self
+    }
+
+    pub fn set_encoding_count(mut self, count: u32) -> Self {
+        self.encoding_count = count;
+        self
+    }
+
+    pub fn set_save_registers(mut self, save: bool) -> Self {
+        self.save_registers = save;
+        self
+    }
+
+    pub fn build(self) -> SgnEncoder<AsmType> {
+        let assembler = AsmType::new();
+        SgnEncoder { seed: self.seed, assembler, plain_decoder: self.plain_decoder, encoding_count: self.encoding_count, save_registers: self.save_registers }
+    }
 }
 
 impl From<crate::schema::encoder::SchemaEncoderError> for ShikataGaNaiError {

@@ -31,7 +31,12 @@ pub extern "C" fn sgn_encoder_x64_new(
     encoding_count: u32,
     save_registers: bool
 ) -> *mut SgnEncoderX64 {
-    let encoder = Box::new(SgnEncoderX64::new(seed, plain_decoder, encoding_count, save_registers));
+    let encoder = Box::new(SgnEncoderX64::builder()
+        .set_seed(seed)
+        .set_plain_decoder(plain_decoder)
+        .set_encoding_count(encoding_count)
+        .set_save_registers(save_registers)
+        .build());
     Box::into_raw(encoder)
 }
 

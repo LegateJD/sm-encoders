@@ -87,7 +87,7 @@ fn encode() -> Result<(), String> {
     let args = Args {
         input: "input.bin".to_owned(),
         output: "output.bin".to_owned(),
-        encoder_type: Some(EncoderType::Sgn),
+        encoder_type: Some(EncoderType::XorDynamic),
         plain_decoder: false,
         encoding_count: 6,
         save_registers: false,
@@ -115,11 +115,16 @@ fn encode() -> Result<(), String> {
 
         match encoder_type {
             EncoderType::Sgn => {
-                let mut encoder = SgnEncoderX64::new(seed, args.plain_decoder, args.encoding_count, args.save_registers);
+                let mut encoder = SgnEncoderX64::builder()
+                    .set_seed(seed)
+                    .set_plain_decoder(args.plain_decoder)
+                    .set_encoding_count(args.encoding_count)
+                    .set_save_registers(args.save_registers)
+                    .build();
                 encoder.encode(&buf).map_err(|x| x.to_string())?
             }
             EncoderType::XorDynamic => {
-                let mut encoder = XorDynamicEncoderX64::new(seed);
+                let mut encoder = XorDynamicEncoderX64::new(args.encoding_count);
                 encoder.encode(&buf).map_err(|x: xor_dynamic::encoder::XorDynamicEncoderError| x.to_string())?
             }
             EncoderType::Schema => {
