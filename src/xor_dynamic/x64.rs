@@ -21,7 +21,7 @@ use crate::{
 };
 use dynasmrt::{
     dynasm,
-    x64::{Rq, X64Relocation},
+    x64::{X64Relocation},
     DynasmApi, DynasmError, DynasmLabelApi, VecAssembler,
 };
 use rand::Rng;

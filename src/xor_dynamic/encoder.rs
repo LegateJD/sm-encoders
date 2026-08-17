@@ -19,7 +19,13 @@ use std::collections::HashSet;
 use thiserror::Error;
 
 use crate::{
-    core::encoder::{AsmInit, Encoder}, obfuscation::{aarch64::AArch64CodeAssembler, common::{AsmSaveRegisters, GarbageInstructions}, x32::X32CodeAssembler, x64::X64CodeAssembler},
+    core::encoder::{AsmInit, Encoder},
+    obfuscation::{
+        aarch64::AArch64CodeAssembler,
+        common::{AsmSaveRegisters, GarbageInstructions},
+        x32::X32CodeAssembler,
+        x64::X64CodeAssembler,
+    },
 };
 
 pub type XorDynamicEncoderX64ChaCha = XorDynamicEncoder<X64CodeAssembler<ChaCha20Rng>>;
@@ -125,10 +131,15 @@ where
             stub_key_terminator,
             stub_payload_terminator,
             badchars,
-            save_registers
+            save_registers,
         }
     }
+}
 
+impl<AsmType> XorDynamicEncoder<AsmType>
+where
+    AsmType: XorDynamicStub,
+{
     pub fn builder() -> XorDynamicEncoderBuilder<AsmType> {
         XorDynamicEncoderBuilder::default()
     }
@@ -143,13 +154,17 @@ pub struct XorDynamicEncoderBuilder<AsmType> {
 
 impl<AsmType> Default for XorDynamicEncoderBuilder<AsmType> {
     fn default() -> Self {
-        Self { encoding_count: 1, save_registers: false, _marker: std::marker::PhantomData }
+        Self {
+            encoding_count: 1,
+            save_registers: false,
+            _marker: std::marker::PhantomData,
+        }
     }
 }
 
 impl<AsmType> XorDynamicEncoderBuilder<AsmType>
 where
-    AsmType: XorDynamicStub + AsmInit,
+    AsmType: XorDynamicStub,
 {
     pub fn set_encoding_count(mut self, count: u32) -> Self {
         self.encoding_count = count;
@@ -161,29 +176,38 @@ where
         self
     }
 
-    pub fn build(self) -> XorDynamicEncoder<AsmType> {
-        XorDynamicEncoder::new(self.encoding_count, self.save_registers)
-    }
-
-    pub fn build_with_rng<RngType>(self, rng: RngType) -> XorDynamicEncoder<AsmType>
+    pub fn build_with_rng(self, seed: u64) -> XorDynamicEncoder<AsmType>
     where
-        AsmType: crate::core::encoder::AsmInitWithRng<RngType>,
-        RngType: rand::Rng,
+        AsmType: crate::core::encoder::AsmInitWithSeed,
     {
-        let assembler = AsmType::new_with_rng(rng);
+        let assembler = AsmType::new_with_rng(seed);
         let stub_key_terminator = vec![0x41];
         let stub_payload_terminator = vec![0x42, 0x42];
         let mut badchars: HashSet<u8> = HashSet::new();
         badchars.insert(0x00);
         badchars.insert(0x0a);
         badchars.insert(0x0d);
-        XorDynamicEncoder { encoding_count: self.encoding_count, save_registers: self.save_registers, assembler, stub_key_terminator, stub_payload_terminator, badchars }
+        XorDynamicEncoder {
+            encoding_count: self.encoding_count,
+            save_registers: self.save_registers,
+            assembler,
+            stub_key_terminator,
+            stub_payload_terminator,
+            badchars,
+        }
+    }
+
+    pub fn build(self) -> XorDynamicEncoder<AsmType>
+    where
+        AsmType: crate::core::encoder::AsmInit,
+    {
+        XorDynamicEncoder::new(self.encoding_count, self.save_registers)
     }
 }
 
 impl<AsmType> Encoder for XorDynamicEncoder<AsmType>
 where
-    AsmType: XorDynamicStub + AsmInit + AsmSaveRegisters + GarbageInstructions
+    AsmType: XorDynamicStub + AsmSaveRegisters + GarbageInstructions,
 {
     fn encode(&mut self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
         let mut data = payload.to_vec();
@@ -209,7 +233,7 @@ where
 
 impl<AsmType> XorDynamicEncoder<AsmType>
 where
-    AsmType: XorDynamicStub + AsmInit + GarbageInstructions,
+    AsmType: XorDynamicStub + GarbageInstructions,
 {
     fn encode_recursive(
         &mut self,

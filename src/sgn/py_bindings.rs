@@ -37,7 +37,7 @@ impl PySgnEncoderX64 {
     #[pyo3(signature = (seed=0, plain_decoder=false))]
     fn new(seed: u8, plain_decoder: bool) -> Self {
         Self {
-            encoder: SgnEncoderX64::builder().seed(seed).plain_decoder(plain_decoder).build(),
+            encoder: SgnEncoderX64::builder().set_plain_decoder(plain_decoder).build_with_rng(seed as u64),
         }
     }
 
@@ -65,7 +65,7 @@ impl PySgnEncoderX32 {
     #[pyo3(signature = (seed=0, plain_decoder=false))]
     fn new(seed: u8, plain_decoder: bool) -> Self {
         Self {
-            encoder: SgnEncoderX32::builder().seed(seed).plain_decoder(plain_decoder).build(),
+            encoder: SgnEncoderX32::builder().set_plain_decoder(plain_decoder).build_with_rng(seed as u64),
         }
     }
 
@@ -93,7 +93,7 @@ impl PySgnEncoderAArch64 {
     #[pyo3(signature = (seed=0, plain_decoder=false))]
     fn new(seed: u8, plain_decoder: bool) -> Self {
         Self {
-            encoder: SgnEncoderAArch64::builder().seed(seed).plain_decoder(plain_decoder).build(),
+            encoder: SgnEncoderAArch64::builder().set_plain_decoder(plain_decoder).build_with_rng(seed as u64),
         }
     }
 

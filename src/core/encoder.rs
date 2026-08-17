@@ -38,7 +38,7 @@ pub trait AsmInit {
     fn new() -> Self;
 }
 
-pub trait AsmInitWithRng<RngType: Rng> {
-    fn new_with_rng(rng: RngType) -> Self;
+pub trait AsmInitWithSeed {
+    fn new_with_rng(seed: u64) -> Self;
 }
 

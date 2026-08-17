@@ -77,7 +77,7 @@ impl Architecture {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StageConfigData {
     #[serde(default)]
-    pub seed: u8,
+    pub seed: u64,
     pub architecture: Architecture,
     #[serde(default)]
     pub plain_decoder: bool,

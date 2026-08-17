@@ -25,7 +25,7 @@ use rand::{
 use thiserror::Error;
 
 use crate::{
-    core::encoder::Encoder, obfuscation::{common::{CallOver, GarbageInstructions, GarbageJump}, x64::X64CodeAssembler}, sgn::encoder::SgnDecoderStub, x64_arch::registers::{get_save_random_general_purpose_register, RSP_FULL}
+    core::encoder::{AsmInitWithSeed, Encoder}, obfuscation::{common::{CallOver, GarbageInstructions, GarbageJump}, x64::X64CodeAssembler}, sgn::encoder::SgnDecoderStub, x64_arch::registers::{RSP_FULL, get_save_random_general_purpose_register}
 };
 use crate::core::encoder::AsmInit;
 use crate::obfuscation::aarch64::AArch64CodeAssembler;
@@ -77,25 +77,21 @@ pub enum SchemaInstruction {
 
 impl<AsmType> SchemaEncoder<AsmType>
 where
-    AsmType: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + SchemaDecoderStub + AsmInit
+    AsmType: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + SchemaDecoderStub
 {
-    pub fn new(_seed: u8) -> Self {
+    pub fn new(_seed: u8) -> SchemaEncoder<AsmType> 
+    where
+        AsmType: crate::core::encoder::AsmInit,
+    {
         let assembler = AsmType::new();
 
         Self { assembler }
     }
 }
 
-impl<AsmType> SchemaEncoder<AsmType>
-where
-    AsmType: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + SchemaDecoderStub,
-{
-    pub fn new_with_rng<RngType>(rng: RngType) -> Self
-    where
-        AsmType: crate::core::encoder::AsmInitWithRng<RngType>,
-        RngType: rand::Rng,
-    {
-        let assembler = AsmType::new_with_rng(rng);
+impl AsmInitWithSeed for SchemaEncoder<X64CodeAssembler<ChaCha20Rng>> {
+    fn new_with_rng(seed: u64) -> Self {
+        let assembler = X64CodeAssembler::new_with_rng(seed);
         Self { assembler }
     }
 }

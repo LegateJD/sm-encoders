@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-use rand::rngs::{ChaCha12Rng, ChaCha20Rng, ThreadRng};
+use rand::rngs::{ChaCha20Rng, ThreadRng};
+use rand::{Rng, RngExt};
 use thiserror::Error;
 
+use crate::core::encoder::AsmInitWithSeed;
 use crate::obfuscation::aarch64::AArch64CodeAssembler;
 use crate::obfuscation::common::{AsmSaveRegisters, GarbageInstructions};
 use crate::obfuscation::x32::X32CodeAssembler;
@@ -34,15 +36,13 @@ pub enum ShikataGaNaiError {
     SchemaEncoder,
 }
 
-pub type SgnEncoderX64ChaCha12Rng = SgnEncoder<X64CodeAssembler<ChaCha12Rng>>;
-pub type SgnEncoderX64ChaChaRng = SgnEncoder<X64CodeAssembler<ChaCha20Rng>>;
-pub type SgnEncoderX32ChaChaRng = SgnEncoder<X32CodeAssembler<ChaCha20Rng>>;
+pub type SgnEncoderX64 = SgnEncoder<X64CodeAssembler<ChaCha20Rng>>;
+pub type SgnEncoderX32 = SgnEncoder<X32CodeAssembler<ChaCha20Rng>>;
 pub type SgnEncoderAArch64 = SgnEncoder<AArch64CodeAssembler<ChaCha20Rng>>;
 pub type SgnEncoderX64ThreadRng = SgnEncoder<X64CodeAssembler<ThreadRng>>;
 
 #[derive(Debug)]
 pub struct SgnEncoder<AsmType: SgnDecoderStub> {
-    seed: u8,
     assembler: AsmType,
     plain_decoder: bool,
     encoding_count: u32,
@@ -57,16 +57,37 @@ pub trait SgnDecoderStub {
     ) -> Result<Vec<u8>, ShikataGaNaiError>;
 }
 
+/// Draws the per-round feedback seed from the assembler's RNG, so the encoder
+/// shares one random stream instead of a second, correlated one.
+pub trait SgnSeedSource {
+    fn next_seed(&mut self) -> u8;
+}
+
+impl<RngType: Rng> SgnSeedSource for X64CodeAssembler<RngType> {
+    fn next_seed(&mut self) -> u8 {
+        self.rng.random()
+    }
+}
+
+impl<RngType: Rng> SgnSeedSource for X32CodeAssembler<RngType> {
+    fn next_seed(&mut self) -> u8 {
+        self.rng.random()
+    }
+}
+
+impl<RngType: Rng> SgnSeedSource for AArch64CodeAssembler<RngType> {
+    fn next_seed(&mut self) -> u8 {
+        self.rng.random()
+    }
+}
+
 impl<AsmType> SgnEncoder<AsmType>
 where
     AsmType: SgnDecoderStub + AsmInit,
 {
-    pub fn new(seed: u8, plain_decoder: bool, encoding_count: u32, save_registers: bool) -> Self {
-        let assembler = AsmType::new();
-
+    pub fn new(plain_decoder: bool, encoding_count: u32, save_registers: bool) -> Self {
         Self {
-            seed,
-            assembler,
+            assembler: AsmType::new(),
             plain_decoder,
             encoding_count,
             save_registers,
@@ -85,7 +106,6 @@ where
 
 #[derive(Debug)]
 pub struct SgnEncoderBuilder<AsmType> {
-    seed: u8,
     plain_decoder: bool,
     encoding_count: u32,
     save_registers: bool,
@@ -95,7 +115,6 @@ pub struct SgnEncoderBuilder<AsmType> {
 impl<AsmType> Default for SgnEncoderBuilder<AsmType> {
     fn default() -> Self {
         Self {
-            seed: 0,
             plain_decoder: false,
             encoding_count: 1,
             save_registers: false,
@@ -108,11 +127,6 @@ impl<AsmType> SgnEncoderBuilder<AsmType>
 where
     AsmType: SgnDecoderStub,
 {
-    pub fn set_seed(mut self, seed: u8) -> Self {
-        self.seed = seed;
-        self
-    }
-
     pub fn set_plain_decoder(mut self, plain: bool) -> Self {
         self.plain_decoder = plain;
         self
@@ -128,31 +142,24 @@ where
         self
     }
 
-    pub fn build_with_rng<RngType>(self, rng: RngType) -> SgnEncoder<AsmType>
+    pub fn build(self) -> SgnEncoder<AsmType>
     where
-        AsmType: crate::core::encoder::AsmInitWithRng<RngType>,
-        RngType: rand::Rng,
+        AsmType: AsmInit,
     {
-        let assembler = AsmType::new_with_rng(rng);
         SgnEncoder {
-            seed: self.seed,
-            assembler,
+            assembler: AsmType::new(),
             plain_decoder: self.plain_decoder,
             encoding_count: self.encoding_count,
             save_registers: self.save_registers,
         }
     }
-}
 
-impl<AsmType> SgnEncoderBuilder<AsmType>
-where
-    AsmType: SgnDecoderStub + AsmInit,
-{
-    pub fn build(self) -> SgnEncoder<AsmType> {
-        let assembler = AsmType::new();
+    pub fn build_with_rng(self, seed: u64) -> SgnEncoder<AsmType>
+    where
+        AsmType: AsmInitWithSeed,
+    {
         SgnEncoder {
-            seed: self.seed,
-            assembler,
+            assembler: AsmType::new_with_rng(seed),
             plain_decoder: self.plain_decoder,
             encoding_count: self.encoding_count,
             save_registers: self.save_registers,
@@ -168,23 +175,24 @@ impl From<crate::schema::encoder::SchemaEncoderError> for ShikataGaNaiError {
 
 impl<AsmType> Encoder for SgnEncoder<AsmType>
 where
-    AsmType: SgnDecoderStub + AsmInit + SchemaDecoderStub + GarbageInstructions + AsmSaveRegisters,
+    AsmType: SgnDecoderStub + SchemaDecoderStub + GarbageInstructions + AsmSaveRegisters + SgnSeedSource,
 {
     type Error = ShikataGaNaiError;
 
     fn encode(&mut self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
-        let mut data = payload.to_vec();
+        let mut full_binary = payload.to_vec();
 
         if self.save_registers {
-            let save_registers_suffix = self.assembler.get_save_registers_suffix();
-            data.extend(save_registers_suffix.iter());
+            full_binary.extend(self.assembler.get_save_registers_suffix());
         }
 
-        let mut full_binary = self.encode_recursive(&data, self.encoding_count)?;
+        for _ in 0..self.encoding_count {
+            full_binary = self.encode_round(&full_binary)?;
+        }
 
         if self.save_registers {
             let mut save_registers_prefix = self.assembler.get_save_registers_prefix();
-            save_registers_prefix.extend(full_binary.iter());
+            save_registers_prefix.extend(full_binary);
             full_binary = save_registers_prefix;
         }
 
@@ -194,23 +202,16 @@ where
 
 impl<AsmType> SgnEncoder<AsmType>
 where
-    AsmType: SgnDecoderStub + AsmInit + SchemaDecoderStub + GarbageInstructions + AsmSaveRegisters,
+    AsmType: SgnDecoderStub + SchemaDecoderStub + GarbageInstructions + AsmSaveRegisters + SgnSeedSource,
 {
-    fn encode_recursive(
-        &mut self,
-        payload: &[u8],
-        iterations_remaining: u32,
-    ) -> Result<Vec<u8>, ShikataGaNaiError> {
-        if iterations_remaining == 0 {
-            return Ok(payload.to_vec());
-        }
+    fn encode_round(&mut self, payload: &[u8]) -> Result<Vec<u8>, ShikataGaNaiError> {
+        let mut data = self.assembler.generate_garbage_instructions();
+        data.extend_from_slice(payload);
 
-        let mut data = payload.to_vec();
-        let mut garbage = self.assembler.generate_garbage_instructions();
-        garbage.extend(data.iter());
-        data = garbage;
-        additive_feedback_loop(&mut data, self.seed);
-        let mut full_binary = self.assembler.get_sgn_decoder_stub(self.seed, data.len())?;
+        let seed = self.assembler.next_seed();
+        additive_feedback_loop(&mut data, seed);
+
+        let mut full_binary = self.assembler.get_sgn_decoder_stub(seed, data.len())?;
         full_binary.extend(data.iter());
 
         if !self.plain_decoder {
@@ -222,7 +223,7 @@ where
                 .add_schema_decoder(full_binary, &random_schema)?;
         }
 
-        self.encode_recursive(&full_binary, iterations_remaining - 1)
+        Ok(full_binary)
     }
 }
 

@@ -17,7 +17,7 @@
 use rand::{Rng, SeedableRng, rngs::{ChaCha12Rng, ChaCha20Rng, ThreadRng}};
 
 use crate::{
-    core::encoder::{AsmInit, AsmInitWithRng}, obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump}, utils::rng::RngCoinFlip, x64_arch::garbage::generate_garbage_x64_assembly
+    core::encoder::{AsmInit, AsmInitWithSeed}, obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump}, utils::rng::RngCoinFlip, x64_arch::garbage::generate_garbage_x64_assembly
 };
 use crate::obfuscation::common::AsmSaveRegisters;
 
@@ -32,23 +32,10 @@ impl AsmInit for X64CodeAssembler<ThreadRng> {
     }
 }
 
-impl AsmInit for X64CodeAssembler<ChaCha12Rng> {
-    fn new() -> Self {
-        let rng = ChaCha12Rng::seed_from_u64(7547458);
+impl AsmInitWithSeed for X64CodeAssembler<ChaCha20Rng> {
+    fn new_with_rng(seed: u64) -> Self {
+        let rng = ChaCha20Rng::seed_from_u64(seed);
         X64CodeAssembler { rng: rng }
-    }
-}
-
-impl AsmInit for X64CodeAssembler<ChaCha20Rng> {
-    fn new() -> Self {
-        let rng = ChaCha20Rng::seed_from_u64(7547458);
-        X64CodeAssembler { rng: rng }
-    }
-}
-
-impl<RngType: Rng> AsmInitWithRng<RngType> for X64CodeAssembler<RngType> {
-    fn new_with_rng(rng: RngType) -> Self {
-        X64CodeAssembler { rng: rng  }
     }
 }
 
