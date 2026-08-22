@@ -20,7 +20,7 @@ use rand::Rng;
 use crate::{obfuscation::aarch64::AArch64CodeAssembler, xor_dynamic::encoder::{XorDynamicEncoderError, XorDynamicStub}};
 
 impl<RngType: Rng> XorDynamicStub for AArch64CodeAssembler<RngType> {
-    fn get_decoder_stub(&mut self) -> Result<Vec<u8>, XorDynamicEncoderError> {
+    fn get_xor_dynamic_decoder_stub(&mut self) -> Result<Vec<u8>, XorDynamicEncoderError> {
         let mut assembler = VecAssembler::<Aarch64Relocation>::new(0);
 
         dynasm!(assembler

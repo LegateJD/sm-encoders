@@ -27,7 +27,7 @@ use dynasmrt::{
 use rand::Rng;
 
 impl<RngType: Rng> XorDynamicStub for X64CodeAssembler<RngType> {
-    fn get_decoder_stub(&mut self) -> Result<Vec<u8>, XorDynamicEncoderError> {
+    fn get_xor_dynamic_decoder_stub(&mut self) -> Result<Vec<u8>, XorDynamicEncoderError> {
         let mut assembler = VecAssembler::<X64Relocation>::new(0);
         let link_register =
             get_save_random_general_purpose_register(&[RBP_FULL, RSP_FULL], &mut self.rng);

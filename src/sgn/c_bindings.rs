@@ -35,7 +35,7 @@ pub extern "C" fn sgn_encoder_x64_new(
         .set_plain_decoder(plain_decoder)
         .set_encoding_count(encoding_count)
         .set_save_registers(save_registers)
-        .build_with_rng(seed as u64));
+        .build_with_rng_seed(seed as u64));
     Box::into_raw(encoder)
 }
 

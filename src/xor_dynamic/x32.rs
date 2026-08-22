@@ -21,7 +21,7 @@ use crate::{obfuscation::{x32::X32CodeAssembler, x64::X64CodeAssembler}, xor_dyn
 use crate::x64_arch::registers::{get_save_random_general_purpose_register, RBP_FULL, RCX_FULL, RSP_FULL};
 
 impl<RngType: Rng> XorDynamicStub for X32CodeAssembler<RngType> {
-    fn get_decoder_stub(&mut self) -> Result<Vec<u8>, XorDynamicEncoderError> {
+    fn get_xor_dynamic_decoder_stub(&mut self) -> Result<Vec<u8>, XorDynamicEncoderError> {
         let mut assembler = VecAssembler::<X86Relocation>::new(0);
         let link_register = get_save_random_general_purpose_register(&[RBP_FULL, RSP_FULL], &mut self.rng);
         let link_register_id = link_register.quad as u8;
