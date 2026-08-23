@@ -107,12 +107,12 @@ fn encode() -> Result<(), String> {
         input: "input.bin".to_owned(),
         output: "output.bin".to_owned(),
         encoder_type: Some(EncoderType::XorDynamic),
-        plain_decoder: true,
+        plain_decoder: false,
         encoding_count: 1,
         save_registers: false,
         pipeline: None,
         rng: RngAlgorithm::ChaCha,
-        seed: Some(78474),
+        seed: Some(42352),
     };
 
     let mut buf = vec![];

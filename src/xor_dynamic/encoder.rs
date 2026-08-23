@@ -19,12 +19,14 @@ use std::collections::HashSet;
 use thiserror::Error;
 
 use crate::{
-    core::encoder::{AsmInit, Encoder}, obfuscation::{
+    core::encoder::{AsmInit, AsmInitWithSeed, Encoder},
+    obfuscation::{
         aarch64::AArch64CodeAssembler,
         common::{AsmSaveRegisters, GarbageInstructions},
         x32::X32CodeAssembler,
         x64::X64CodeAssembler,
-    }, schema::encoder::SchemaDecoderStub,
+    },
+    schema::encoder::SchemaDecoderStub,
 };
 
 pub type XorDynamicEncoderX64ChaCha = XorDynamicEncoder<X64CodeAssembler<ChaCha20Rng>>;
@@ -58,10 +60,18 @@ pub enum XorDynamicEncoderError {
     NonExistentKeyTerminator,
     #[error("Payload terminator could not be found for the xor dynamic encoder.")]
     NonExistentPayloadTerminator,
+    #[error("NoAvailableByteForStubTerminator.")]
+    NoAvailableByteForStubTerminator,
+}
+
+pub struct XorDecoderStub {
+    pub stub: Vec<u8>,
+    pub key_terminator_stub: Vec<u8>,
+    pub payload_terminator_stub: Vec<u8>,
 }
 
 pub trait XorDynamicStub {
-    fn get_xor_dynamic_decoder_stub(&mut self) -> Result<Vec<u8>, XorDynamicEncoderError>;
+    fn get_xor_dynamic_decoder_stub(&mut self, badchars: &HashSet<u8>) -> Result<XorDecoderStub, XorDynamicEncoderError>;
 }
 
 pub fn generate_key(
@@ -163,15 +173,15 @@ where
 
     pub fn build_with_rng_seed(self, seed: u64) -> XorDynamicEncoder<AsmType>
     where
-        AsmType: crate::core::encoder::AsmInitWithSeed,
+        AsmType: AsmInitWithSeed,
     {
         let assembler = AsmType::new_with_rng(seed);
         let stub_key_terminator = vec![0x41];
         let stub_payload_terminator = vec![0x42, 0x42];
         let mut badchars: HashSet<u8> = HashSet::new();
-        badchars.insert(0x00);
-        badchars.insert(0x0a);
-        badchars.insert(0x0d);
+        //badchars.insert(0x00);
+        //badchars.insert(0x0a);
+        //badchars.insert(0x0d);
         XorDynamicEncoder {
             encoding_count: self.encoding_count,
             save_registers: self.save_registers,
@@ -185,15 +195,15 @@ where
 
     pub fn build(self) -> XorDynamicEncoder<AsmType>
     where
-        AsmType: crate::core::encoder::AsmInit,
+        AsmType: AsmInit,
     {
         let assembler = AsmType::new();
         let stub_key_terminator = vec![0x41]; // ASCII 'A' symbol, used as a terminator for the key in the stub
         let stub_payload_terminator = vec![0x42, 0x42]; // ASCII 'B, B' symbol, used as a terminator for the payload in the stub
         let mut badchars: HashSet<u8> = HashSet::new();
-        badchars.insert(0x00);
-        badchars.insert(0x0a);
-        badchars.insert(0x0d);
+        //badchars.insert(0x00);
+        //badchars.insert(0x0a);
+        //badchars.insert(0x0d);
 
         XorDynamicEncoder {
             encoding_count: self.encoding_count,
@@ -218,22 +228,33 @@ where
     AsmType: XorDynamicStub + AsmSaveRegisters + GarbageInstructions + SchemaDecoderStub,
 {
     fn encode(&mut self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
-        let mut data = payload.to_vec();
+        loop {
+            let mut data = payload.to_vec();
 
-        if self.save_registers {
-            let save_registers_suffix = self.assembler.get_save_registers_suffix();
-            data.extend(save_registers_suffix.iter());
+            if self.save_registers {
+                let save_registers_suffix = self.assembler.get_save_registers_suffix();
+                data.extend_from_slice(&save_registers_suffix);
+            }
+
+            match self.encode_round(&data, self.encoding_count) {
+                Ok(mut full_binary) => {
+                    if self.save_registers {
+                        let mut save_registers_prefix = self.assembler.get_save_registers_prefix();
+                        save_registers_prefix.extend_from_slice(&full_binary);
+                        full_binary = save_registers_prefix;
+                    }
+
+                    return Ok(full_binary);
+                }
+                Err(err) => {
+                    if matches!(err, XorDynamicEncoderError::BadCharacters) {
+                        continue;
+                    } else {
+                        return Err(err);
+                    }
+                }
+            }
         }
-
-        let mut full_binary = self.encode_round(&payload, self.encoding_count)?;
-
-        if self.save_registers {
-            let mut save_registers_prefix = self.assembler.get_save_registers_prefix();
-            save_registers_prefix.extend(full_binary.iter());
-            full_binary = save_registers_prefix;
-        }
-
-        Ok(full_binary)
     }
 
     type Error = XorDynamicEncoderError;
@@ -253,17 +274,19 @@ where
         }
 
         let badchars = self.badchars.clone();
-        let stub = self.assembler.get_xor_dynamic_decoder_stub()?;
-
+        let decoder_stub = self.assembler.get_xor_dynamic_decoder_stub(&badchars)?;
+        let stub = decoder_stub.stub;
+        let key_terminator_stub = decoder_stub.key_terminator_stub;
+        let payload_terminator_stub = decoder_stub.payload_terminator_stub;
         let stub_without_terminators = stub
-            .windows(self.stub_key_terminator.len())
-            .filter(|w| *w != self.stub_key_terminator.as_slice())
+            .windows(key_terminator_stub.len())
+            .filter(|w| *w != key_terminator_stub.as_slice())
             .collect::<Vec<_>>()
             .concat();
 
         let stub_cleaned = stub_without_terminators
-            .windows(self.stub_payload_terminator.len())
-            .filter(|w| *w != self.stub_payload_terminator.as_slice())
+            .windows(payload_terminator_stub.len())
+            .filter(|w| *w != payload_terminator_stub.as_slice())
             .collect::<Vec<_>>()
             .concat();
 
@@ -290,28 +313,29 @@ where
 
         let mut stub_replaced = stub.clone();
         stub_replaced =
-            replace_subsequence(&stub_replaced, &self.stub_key_terminator, &[key_terminator]);
+            replace_subsequence(&stub_replaced, &key_terminator_stub, &[key_terminator]);
         stub_replaced = replace_subsequence(
             &stub_replaced,
-            &self.stub_payload_terminator,
+            &payload_terminator_stub,
             &payload_terminator,
         );
+
         final_payload.extend_from_slice(&stub_replaced);
         final_payload.extend_from_slice(&key);
         final_payload.push(key_terminator);
         final_payload.extend_from_slice(&encoded);
         final_payload.extend_from_slice(&payload_terminator);
 
-        /*let payload_length = (encoded.len() + payload_terminator.len()) as u32;
+        let payload_length = (key.len() + 1 + encoded.len() + payload_terminator.len()) as u32;
 
-         if !self.plain_decoder {
+        if !self.plain_decoder {
             let schema_size = (final_payload.len() - payload_length as usize) / 4 + 1;
             let random_schema = crate::schema::encoder::new_cipher_schema(schema_size);
             final_payload = crate::schema::encoder::schema_cipher(final_payload, &random_schema);
             final_payload = self
                 .assembler
                 .add_schema_decoder(final_payload, &random_schema)?;
-        }*/
+        }
 
         if has_badchars(&final_payload, &badchars) {
             return Err(XorDynamicEncoderError::BadCharacters);
