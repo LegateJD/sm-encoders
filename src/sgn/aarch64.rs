@@ -42,7 +42,7 @@ impl<RngType: Rng> SgnDecoderStub for AArch64CodeAssembler<RngType> {
         let xor_result_register_register_id = xor_result_register.x as u32;
         let add_result_register_register_id = add_result_register.x as u32;
 
-        dynasm!(assembler
+        /*dynasm!(assembler
             ; .arch aarch64
             ; mov W(seed_register_id), seed as u32
             ; mov X(payload_siez_register_id), payload_size as u64
@@ -58,7 +58,7 @@ impl<RngType: Rng> SgnDecoderStub for AArch64CodeAssembler<RngType> {
             ; _data_sub1:
         );
 
-        /*dynasm!(assembler
+        dynasm!(assembler
             ; .arch aarch64
             ; mov w3, seed as u32
             ; mov x2, payload_size as u64

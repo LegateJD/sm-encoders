@@ -21,7 +21,7 @@ use dynasmrt::{
 use rand::{Rng};
 use crate::arm64::registers::{get_random_general_purpose_register, get_safe_random_general_purpose_register};
 
-pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>, &mut dyn Rng); 38] = [
+pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>, &mut dyn Rng); 5] = [
     |assembler, rng| {
         dynasm!(assembler
             ; .arch aarch64
@@ -53,7 +53,9 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>, &
             ; .arch aarch64
             ; cmp xzr, xzr
         );
-    },
+    }
+
+    /* 
     |assembler, rng| {
         let register = get_random_general_purpose_register(rng);
         let register_id = register.x as u32;
@@ -368,5 +370,5 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>, &
             ; .arch aarch64
             ; csel X(register_id), X(register_id), X(register_id), pl
         );
-    }
+    } */
 ];

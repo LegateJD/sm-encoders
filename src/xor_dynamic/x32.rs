@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
+use std::collections::HashSet;
+
 use dynasmrt::{dynasm, x64::X64Relocation, x86::X86Relocation, DynasmApi, DynasmError, DynasmLabelApi, VecAssembler};
 use rand::Rng;
 
-use crate::{obfuscation::{x32::X32CodeAssembler, x64::X64CodeAssembler}, xor_dynamic::encoder::{XorDynamicEncoderError, XorDynamicStub}};
+use crate::{obfuscation::{x32::X32CodeAssembler, x64::X64CodeAssembler}, xor_dynamic::encoder::{XorDynamicEncoderError, XorDynamicStub, XorDecoderStub}};
 use crate::x64_arch::registers::{get_save_random_general_purpose_register, RBP_FULL, RCX_FULL, RSP_FULL};
 
 impl<RngType: Rng> XorDynamicStub for X32CodeAssembler<RngType> {
-    fn get_decoder_stub(&mut self) -> Result<Vec<u8>, XorDynamicEncoderError> {
+    fn get_xor_dynamic_decoder_stub(&mut self, badchars: &HashSet<u8>) -> Result<XorDecoderStub, XorDynamicEncoderError> {
         let mut assembler = VecAssembler::<X86Relocation>::new(0);
         let link_register = get_save_random_general_purpose_register(&[RBP_FULL, RSP_FULL], &mut self.rng);
         let link_register_id = link_register.quad as u8;
@@ -92,6 +94,10 @@ impl<RngType: Rng> XorDynamicStub for X32CodeAssembler<RngType> {
 
         let bytes = assembler.finalize()?;
 
-        Ok(bytes)
+        Ok(XorDecoderStub {
+            stub: bytes,
+            key_terminator_stub: vec![0x41],
+            payload_terminator_stub: vec![0x42, 0x42],
+        })
     }
 }

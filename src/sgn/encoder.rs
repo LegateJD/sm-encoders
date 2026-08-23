@@ -154,7 +154,7 @@ where
         }
     }
 
-    pub fn build_with_rng(self, seed: u64) -> SgnEncoder<AsmType>
+    pub fn build_with_rng_seed(self, seed: u64) -> SgnEncoder<AsmType>
     where
         AsmType: AsmInitWithSeed,
     {

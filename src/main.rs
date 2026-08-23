@@ -16,26 +16,30 @@
 
 use std::{
     fs::File,
-    io::{Read, Write}
+    io::{Read, Write},
 };
 
 use clap::{arg, Parser, ValueEnum};
-use rand::{Rng, RngExt, SeedableRng};
 use rand::rngs::{ChaCha12Rng, ChaCha20Rng};
+use rand::{Rng, RngExt, SeedableRng};
 
-use crate::{core::encoder::{AsmInitWithSeed, Encoder}, sgn::encoder::{SgnEncoderX64, SgnEncoderX64ThreadRng}, xor_dynamic::encoder::XorDynamicEncoderX64ChaCha};
 use crate::pipeline::encode::Pipeline;
 use crate::schema::encoder::{SchemaEncoderX64, SchemaEncoderX64ChaCha, SchemaEncoderX64Thread};
+use crate::{
+    core::encoder::{AsmInitWithSeed, Encoder},
+    sgn::encoder::{SgnEncoderX64, SgnEncoderX64ThreadRng},
+    xor_dynamic::encoder::XorDynamicEncoderX64ChaCha,
+};
 
-pub mod sgn;
-pub mod core;
-pub mod xor_dynamic;
-pub mod x64_arch;
-pub mod schema;
 pub mod arm64;
+pub mod core;
 pub mod obfuscation;
-pub mod utils;
 pub mod pipeline;
+pub mod schema;
+pub mod sgn;
+pub mod utils;
+pub mod x64_arch;
+pub mod xor_dynamic;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -74,13 +78,12 @@ struct Args {
 
     /// Seed for the assembler RNG; random if omitted (ignored for --rng thread)
     #[arg(long)]
-    asm_seed: Option<u64>,
+    seed: Option<u64>,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 enum EncoderType {
     ShikataGaNai,
-    Schema,
     XorDynamic,
 }
 
@@ -88,13 +91,13 @@ enum EncoderType {
 enum RngAlgorithm {
     #[default]
     Thread,
-    ChaCha
+    ChaCha,
 }
 
 fn main() {
     match encode() {
         Ok(_) => println!("Written payload succesfully"),
-        Err(error) => println!("{}", error),
+        Err(error) => println!("Main error: {}", error),
     }
 }
 
@@ -103,13 +106,13 @@ fn encode() -> Result<(), String> {
     let args = Args {
         input: "input.bin".to_owned(),
         output: "output.bin".to_owned(),
-        encoder_type: Some(EncoderType::ShikataGaNai),
+        encoder_type: Some(EncoderType::XorDynamic),
         plain_decoder: false,
-        encoding_count: 2,
+        encoding_count: 1,
         save_registers: false,
         pipeline: None,
         rng: RngAlgorithm::ChaCha,
-        asm_seed: None,
+        seed: Some(42352),
     };
 
     let mut buf = vec![];
@@ -125,12 +128,15 @@ fn encode() -> Result<(), String> {
         pipeline.run(&buf)?
     } else {
         // Use single encoder mode
-        let encoder_type = args.encoder_type
+        let encoder_type = args
+            .encoder_type
             .ok_or("Either --encoder-type or --pipeline must be specified")?;
 
-        let seed: u8 = rand::rng().random();
-        let asm_seed: u64 = args.asm_seed.unwrap_or_else(|| rand::rng().random());
-        println!("Using single encoder mode with seed: 0x{:02X}, asm_seed: 0x{:016X}", seed, asm_seed);
+        let seed: u64 = args.seed.unwrap_or_else(|| rand::rng().random());
+        println!(
+            "Using single encoder mode with asm_seed: 0x{:016X}",
+            seed
+        );
 
         match (encoder_type, args.rng) {
             (EncoderType::ShikataGaNai, RngAlgorithm::ChaCha) => {
@@ -138,7 +144,7 @@ fn encode() -> Result<(), String> {
                     .set_plain_decoder(args.plain_decoder)
                     .set_encoding_count(args.encoding_count)
                     .set_save_registers(args.save_registers)
-                    .build_with_rng(asm_seed);
+                    .build_with_rng_seed(seed);
                 encoder.encode(&buf).map_err(|x| x.to_string())?
             }
             (EncoderType::ShikataGaNai, RngAlgorithm::Thread) => {
@@ -151,18 +157,13 @@ fn encode() -> Result<(), String> {
             }
             (EncoderType::XorDynamic, _) => {
                 let mut encoder = XorDynamicEncoderX64ChaCha::builder()
+                    .set_plain_decoder(args.plain_decoder)
                     .set_encoding_count(args.encoding_count)
                     .set_save_registers(args.save_registers)
-                    .build_with_rng(asm_seed);
-                encoder.encode(&buf).map_err(|x: xor_dynamic::encoder::XorDynamicEncoderError| x.to_string())?
-            }
-            (EncoderType::Schema, RngAlgorithm::ChaCha) => {
-                let mut encoder = SchemaEncoderX64ChaCha::new_with_rng(asm_seed);
-                encoder.encode(&buf).map_err(|x| x.to_string())?
-            }
-            (EncoderType::Schema, RngAlgorithm::Thread) => {
-                let mut encoder = SchemaEncoderX64Thread::new(0);
-                encoder.encode(&buf).map_err(|x| x.to_string())?
+                    .build_with_rng_seed(seed);
+                encoder
+                    .encode(&buf)
+                    .map_err(|x: xor_dynamic::encoder::XorDynamicEncoderError| x.to_string())?
             }
         }
     };
