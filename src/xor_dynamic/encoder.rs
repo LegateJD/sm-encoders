@@ -19,7 +19,7 @@ use std::collections::HashSet;
 use thiserror::Error;
 
 use crate::{
-    core::encoder::{AsmInit, AsmInitWithSeed, Encoder},
+    core::encoder::{AsmInit, AsmInitWithSeed, Encoder, RngSource},
     obfuscation::{
         aarch64::AArch64CodeAssembler,
         common::{AsmSaveRegisters, GarbageInstructions},
@@ -225,7 +225,7 @@ impl From<crate::schema::encoder::SchemaEncoderError> for XorDynamicEncoderError
 
 impl<AsmType> Encoder for XorDynamicEncoder<AsmType>
 where
-    AsmType: XorDynamicStub + AsmSaveRegisters + GarbageInstructions + SchemaDecoderStub,
+    AsmType: XorDynamicStub + AsmSaveRegisters + GarbageInstructions + SchemaDecoderStub + RngSource,
 {
     fn encode(&mut self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
         loop {
@@ -262,7 +262,7 @@ where
 
 impl<AsmType> XorDynamicEncoder<AsmType>
 where
-    AsmType: XorDynamicStub + GarbageInstructions + SchemaDecoderStub,
+    AsmType: XorDynamicStub + GarbageInstructions + SchemaDecoderStub + RngSource,
 {
     fn encode_round(
         &mut self,
@@ -330,7 +330,7 @@ where
 
         if !self.plain_decoder {
             let schema_size = (final_payload.len() - payload_length as usize) / 4 + 1;
-            let random_schema = crate::schema::encoder::new_cipher_schema(schema_size);
+            let random_schema = crate::schema::encoder::new_cipher_schema(schema_size, self.assembler.rng());
             final_payload = crate::schema::encoder::schema_cipher(final_payload, &random_schema);
             final_payload = self
                 .assembler

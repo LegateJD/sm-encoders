@@ -18,7 +18,7 @@ use rand::rngs::{ChaCha20Rng, ThreadRng};
 use rand::{Rng, RngExt};
 use thiserror::Error;
 
-use crate::core::encoder::AsmInitWithSeed;
+use crate::core::encoder::{AsmInitWithSeed, RngSource};
 use crate::obfuscation::aarch64::AArch64CodeAssembler;
 use crate::obfuscation::common::{AsmSaveRegisters, GarbageInstructions};
 use crate::obfuscation::x32::X32CodeAssembler;
@@ -57,27 +57,21 @@ pub trait SgnDecoderStub {
     ) -> Result<Vec<u8>, ShikataGaNaiError>;
 }
 
-/// Draws the per-round feedback seed from the assembler's RNG, so the encoder
-/// shares one random stream instead of a second, correlated one.
-pub trait SgnSeedSource {
-    fn next_seed(&mut self) -> u8;
-}
-
-impl<RngType: Rng> SgnSeedSource for X64CodeAssembler<RngType> {
-    fn next_seed(&mut self) -> u8 {
-        self.rng.random()
+impl<RngType: Rng> RngSource for X64CodeAssembler<RngType> {
+    fn rng(&mut self) -> &mut dyn rand::rand_core::RngCore {
+        &mut self.rng
     }
 }
 
-impl<RngType: Rng> SgnSeedSource for X32CodeAssembler<RngType> {
-    fn next_seed(&mut self) -> u8 {
-        self.rng.random()
+impl<RngType: Rng> RngSource for X32CodeAssembler<RngType> {
+    fn rng(&mut self) -> &mut dyn rand::rand_core::RngCore {
+        &mut self.rng
     }
 }
 
-impl<RngType: Rng> SgnSeedSource for AArch64CodeAssembler<RngType> {
-    fn next_seed(&mut self) -> u8 {
-        self.rng.random()
+impl<RngType: Rng> RngSource for AArch64CodeAssembler<RngType> {
+    fn rng(&mut self) -> &mut dyn rand::rand_core::RngCore {
+        &mut self.rng
     }
 }
 
@@ -175,7 +169,7 @@ impl From<crate::schema::encoder::SchemaEncoderError> for ShikataGaNaiError {
 
 impl<AsmType> Encoder for SgnEncoder<AsmType>
 where
-    AsmType: SgnDecoderStub + SchemaDecoderStub + GarbageInstructions + AsmSaveRegisters + SgnSeedSource,
+    AsmType: SgnDecoderStub + SchemaDecoderStub + GarbageInstructions + AsmSaveRegisters + RngSource,
 {
     type Error = ShikataGaNaiError;
 
@@ -202,13 +196,13 @@ where
 
 impl<AsmType> SgnEncoder<AsmType>
 where
-    AsmType: SgnDecoderStub + SchemaDecoderStub + GarbageInstructions + AsmSaveRegisters + SgnSeedSource,
+    AsmType: SgnDecoderStub + SchemaDecoderStub + GarbageInstructions + AsmSaveRegisters + RngSource,
 {
     fn encode_round(&mut self, payload: &[u8]) -> Result<Vec<u8>, ShikataGaNaiError> {
         let mut data = self.assembler.generate_garbage_instructions();
         data.extend_from_slice(payload);
 
-        let seed = self.assembler.next_seed();
+        let seed = self.assembler.rng().next_u32() as u8;
         additive_feedback_loop(&mut data, seed);
 
         let mut full_binary = self.assembler.get_sgn_decoder_stub(seed, data.len())?;
@@ -216,7 +210,7 @@ where
 
         if !self.plain_decoder {
             let schema_size = (full_binary.len() - data.len()) / 4 + 1;
-            let random_schema = crate::schema::encoder::new_cipher_schema(schema_size);
+            let random_schema = crate::schema::encoder::new_cipher_schema(schema_size, self.assembler.rng());
             full_binary = crate::schema::encoder::schema_cipher(full_binary, &random_schema);
             full_binary = self
                 .assembler

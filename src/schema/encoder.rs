@@ -123,9 +123,12 @@ impl Distribution<SchemaInstruction> for StandardUniform {
     }
 }
 
-impl<AsmType: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + SchemaDecoderStub> Encoder
-    for SchemaEncoder<AsmType>
+impl<AsmType> Encoder for SchemaEncoder<AsmType>
+where
+    AsmType: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + SchemaDecoderStub + crate::core::encoder::RngSource,
 {
+    type Error = SchemaEncoderError;
+
     fn encode(&mut self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
         let mut bin = payload.to_vec();
         let mut garbage = self.assembler.generate_garbage_instructions();
@@ -133,19 +136,16 @@ impl<AsmType: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + Sc
         let schema_size = (garbage.len() - bin.len()) / 4 + 1;
         bin = garbage;
 
-        let random_schema = new_cipher_schema(schema_size);
+        let random_schema = new_cipher_schema(schema_size, self.assembler.rng());
         bin = schema_cipher(bin, &random_schema);
         bin = self.assembler.add_schema_decoder(bin, &random_schema)?;
 
         Ok(bin)
     }
-    
-    type Error = SchemaEncoderError;
 }
 
-pub(crate) fn new_cipher_schema(size: usize) -> Vec<Operation> {
+pub(crate) fn new_cipher_schema(size: usize, rng: &mut dyn rand::rand_core::RngCore) -> Vec<Operation> {
     let mut schema = Vec::with_capacity(size);
-    let mut rng = rand::rng();
 
     for _ in 0..size {
         let instruction: SchemaInstruction = rng.random();

@@ -510,7 +510,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         get_random_safe_assembly(assembler, rng);
 
         dynasm!(assembler
-            ; inc Rq(register_id)
+            ; dec Rq(register_id)
         );
     },
     |assembler, rng| {
@@ -524,7 +524,7 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         get_random_safe_assembly(assembler, rng);
 
         dynasm!(assembler
-            ; dec Rq(register_id)
+            ; inc Rq(register_id)
         );
     },
     |assembler, rng| {
