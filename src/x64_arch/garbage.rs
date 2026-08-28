@@ -15,10 +15,10 @@
  */
 
 use dynasmrt::{
-    dynasm, relocations::Relocation, x64::X64Relocation, x86::X86Relocation, DynasmApi,
+    dynasm, x64::X64Relocation, DynasmApi,
     DynasmLabelApi, VecAssembler,
 };
-use rand::{Rng, RngExt, rngs::ThreadRng, seq::IndexedRandom};
+use rand::{Rng, RngExt, seq::IndexedRandom};
 
 use crate::{
     utils::{rng::RngCoinFlip}, x64_arch::registers::get_random_general_purpose_register,
@@ -28,48 +28,48 @@ trait SuperRng: Rng + RngCoinFlip {}
 
 
 pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut dyn Rng); 66] = [
-    |assembler, rng| {
+    |assembler, _rng| {
         dynasm!(assembler
             ; nop
         );
     },
-    |assembler, rng| {
+    |assembler, _rng| {
 
         dynasm!(assembler
             ; cld
         );
     },
-    |assembler, rng| {
+    |assembler, _rng| {
         dynasm!(assembler
             ; clc
         );
     },
-    |assembler, rng| {
+    |assembler, _rng| {
         dynasm!(assembler
             ; cmc
         );
     },
-    |assembler, rng| {
+    |assembler, _rng| {
         dynasm!(assembler
             ; pause
         );
     },
-    |assembler, rng| {
+    |assembler, _rng| {
         dynasm!(assembler
             ; fnop
         );
     },
-    |assembler, rng| {
+    |assembler, _rng| {
         dynasm!(assembler
             ; fxam
         );
     },
-    |assembler, rng| {
+    |assembler, _rng| {
         dynasm!(assembler
             ; ftst
         );
     },
-    |assembler, rng| {
+    |assembler, _rng| {
         dynasm!(assembler
             ; jmp 2
         );

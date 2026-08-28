@@ -15,24 +15,22 @@
  */
 
 use dynasmrt::{
-    dynasm, relocations::Relocation, aarch64::Aarch64Relocation, DynasmApi,
-    DynasmLabelApi, VecAssembler,
+    dynasm, aarch64::Aarch64Relocation, VecAssembler,
 };
 use rand::{Rng};
-use crate::arm64::registers::{get_random_general_purpose_register, get_safe_random_general_purpose_register};
 
 pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>, &mut dyn Rng); 5] = [
-    |assembler, rng| {
+    |assembler, _rng| {
         dynasm!(assembler
             ; .arch aarch64
             ; nop
         );
     },
-    |assembler, rng| {
+    |assembler, _rng| {
         // msr nzcv, xzr
         assembler.extend(b"\x1f\x42\x1b\xd5");
     },
-    |assembler, rng| {
+    |assembler, _rng| {
 
         // mrs x0, nzcv
         // eor x0, x0, #0x20000000
@@ -42,13 +40,13 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>, &
         assembler.extend(b"\x00\x00\x63\xd2");
         assembler.extend(b"\x00\x42\x1b\xd5");
     },
-    |assembler, rng| {
+    |assembler, _rng| {
         dynasm!(assembler
             ; .arch aarch64
             ; yield
         );
     },
-    |assembler, rng| {
+    |assembler, _rng| {
         dynasm!(assembler
             ; .arch aarch64
             ; cmp xzr, xzr

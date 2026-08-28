@@ -16,7 +16,7 @@
 
 use std::fmt;
 
-use dynasmrt::{dynasm, x64::X64Relocation, DynasmApi, DynasmLabelApi, VecAssembler};
+use dynasmrt::DynasmApi;
 
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use rand::{
@@ -25,12 +25,11 @@ use rand::{
 use thiserror::Error;
 
 use crate::{
-    core::encoder::{AsmInitWithSeed, Encoder}, obfuscation::{common::{CallOver, GarbageInstructions, GarbageJump}, x64::X64CodeAssembler}, sgn::encoder::SgnDecoderStub, x64_arch::registers::{RSP_FULL, get_save_random_general_purpose_register}
+    core::encoder::{AsmInitWithSeed, Encoder}, obfuscation::{common::{CallOver, GarbageInstructions, GarbageJump}, x64::X64CodeAssembler}, sgn::encoder::SgnDecoderStub
 };
 use crate::core::encoder::AsmInit;
 use crate::obfuscation::aarch64::AArch64CodeAssembler;
 use crate::obfuscation::x32::X32CodeAssembler;
-use crate::sgn::encoder::SgnEncoder;
 
 pub type SchemaEncoderX64 = SchemaEncoder<X64CodeAssembler<ChaCha12Rng>>;
 pub type SchemaEncoderX64ChaCha = SchemaEncoder<X64CodeAssembler<ChaCha20Rng>>;

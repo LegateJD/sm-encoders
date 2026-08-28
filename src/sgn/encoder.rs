@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
+use std::collections::HashSet;
+
 use rand::rngs::{ChaCha20Rng, ThreadRng};
-use rand::{Rng, RngExt};
+use rand::Rng;
 use thiserror::Error;
 
 use crate::core::encoder::{AsmInitWithSeed, RngSource};
@@ -34,6 +36,8 @@ pub enum ShikataGaNaiError {
     AssemblerError,
     #[error("Schema encoder error")]
     SchemaEncoder,
+    #[error("BadCharacters")]
+    BadCharacters,
 }
 
 pub type SgnEncoderX64 = SgnEncoder<X64CodeAssembler<ChaCha20Rng>>;
@@ -47,6 +51,8 @@ pub struct SgnEncoder<AsmType: SgnDecoderStub> {
     plain_decoder: bool,
     encoding_count: u32,
     save_registers: bool,
+    badchars: HashSet<u8>,
+    ascii_printable: bool,
 }
 
 pub trait SgnDecoderStub {
@@ -85,6 +91,8 @@ where
             plain_decoder,
             encoding_count,
             save_registers,
+            badchars: HashSet::new(),
+            ascii_printable: false,
         }
     }
 }
@@ -103,6 +111,8 @@ pub struct SgnEncoderBuilder<AsmType> {
     plain_decoder: bool,
     encoding_count: u32,
     save_registers: bool,
+    badchars: HashSet<u8>,
+    ascii_printable: bool,
     _marker: std::marker::PhantomData<AsmType>,
 }
 
@@ -112,6 +122,8 @@ impl<AsmType> Default for SgnEncoderBuilder<AsmType> {
             plain_decoder: false,
             encoding_count: 1,
             save_registers: false,
+            badchars: HashSet::new(),
+            ascii_printable: false,
             _marker: std::marker::PhantomData,
         }
     }
@@ -136,6 +148,16 @@ where
         self
     }
 
+    pub fn set_badchars(mut self, badchars: HashSet<u8>) -> Self {
+        self.badchars = badchars;
+        self
+    }
+
+    pub fn set_ascii_printable(mut self, ascii_printable: bool) -> Self {
+        self.ascii_printable = ascii_printable;
+        self
+    }
+
     pub fn build(self) -> SgnEncoder<AsmType>
     where
         AsmType: AsmInit,
@@ -145,6 +167,8 @@ where
             plain_decoder: self.plain_decoder,
             encoding_count: self.encoding_count,
             save_registers: self.save_registers,
+            badchars: self.badchars,
+            ascii_printable: self.ascii_printable,
         }
     }
 
@@ -157,6 +181,8 @@ where
             plain_decoder: self.plain_decoder,
             encoding_count: self.encoding_count,
             save_registers: self.save_registers,
+            badchars: self.badchars,
+            ascii_printable: self.ascii_printable,
         }
     }
 }
@@ -169,34 +195,48 @@ impl From<crate::schema::encoder::SchemaEncoderError> for ShikataGaNaiError {
 
 impl<AsmType> Encoder for SgnEncoder<AsmType>
 where
-    AsmType: SgnDecoderStub + SchemaDecoderStub + GarbageInstructions + AsmSaveRegisters + RngSource,
+    AsmType:
+        SgnDecoderStub + SchemaDecoderStub + GarbageInstructions + AsmSaveRegisters + RngSource,
 {
     type Error = ShikataGaNaiError;
 
     fn encode(&mut self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
-        let mut full_binary = payload.to_vec();
+        'retry: loop {
+            let mut full_binary = payload.to_vec();
 
-        if self.save_registers {
-            full_binary.extend(self.assembler.get_save_registers_suffix());
+            if self.save_registers {
+                full_binary.extend(self.assembler.get_save_registers_suffix());
+            }
+
+            for _ in 0..self.encoding_count {
+                full_binary = match self.encode_round(&full_binary) {
+                    Ok(data) => data,
+                    Err(ShikataGaNaiError::BadCharacters) => continue,
+                    Err(err) => return Err(err),
+                };
+            }
+
+            if self.save_registers {
+                let mut save_registers_prefix = self.assembler.get_save_registers_prefix();
+                save_registers_prefix.extend(full_binary);
+                full_binary = save_registers_prefix;
+            }
+
+            if has_badchars(&full_binary, &self.badchars)
+                || (self.ascii_printable && !is_ascii_printable(&full_binary))
+            {
+                continue 'retry;
+            }
+
+            return Ok(full_binary);
         }
-
-        for _ in 0..self.encoding_count {
-            full_binary = self.encode_round(&full_binary)?;
-        }
-
-        if self.save_registers {
-            let mut save_registers_prefix = self.assembler.get_save_registers_prefix();
-            save_registers_prefix.extend(full_binary);
-            full_binary = save_registers_prefix;
-        }
-
-        Ok(full_binary)
     }
 }
 
 impl<AsmType> SgnEncoder<AsmType>
 where
-    AsmType: SgnDecoderStub + SchemaDecoderStub + GarbageInstructions + AsmSaveRegisters + RngSource,
+    AsmType:
+        SgnDecoderStub + SchemaDecoderStub + GarbageInstructions + AsmSaveRegisters + RngSource,
 {
     fn encode_round(&mut self, payload: &[u8]) -> Result<Vec<u8>, ShikataGaNaiError> {
         let mut data = self.assembler.generate_garbage_instructions();
@@ -210,7 +250,8 @@ where
 
         if !self.plain_decoder {
             let schema_size = (full_binary.len() - data.len()) / 4 + 1;
-            let random_schema = crate::schema::encoder::new_cipher_schema(schema_size, self.assembler.rng());
+            let random_schema =
+                crate::schema::encoder::new_cipher_schema(schema_size, self.assembler.rng());
             full_binary = crate::schema::encoder::schema_cipher(full_binary, &random_schema);
             full_binary = self
                 .assembler
@@ -219,6 +260,14 @@ where
 
         Ok(full_binary)
     }
+}
+
+fn has_badchars(buf: &[u8], badchars: &HashSet<u8>) -> bool {
+    buf.iter().any(|b| badchars.contains(b))
+}
+
+fn is_ascii_printable(buf: &[u8]) -> bool {
+    buf.iter().all(|&byte| (0x20..=0x7e).contains(&byte))
 }
 
 fn additive_feedback_loop(payload: &mut [u8], mut seed: u8) {

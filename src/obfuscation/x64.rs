@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-use rand::{Rng, SeedableRng, rngs::{ChaCha12Rng, ChaCha20Rng, ThreadRng}};
+use rand::{Rng, SeedableRng, rngs::{ChaCha20Rng, ThreadRng}};
 
 use crate::{
     core::encoder::{AsmInit, AsmInitWithSeed}, obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump}, utils::rng::RngCoinFlip, x64_arch::garbage::generate_garbage_x64_assembly

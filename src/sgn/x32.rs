@@ -15,7 +15,7 @@
  */
 
 
-use dynasmrt::{dynasm, x64::X64Relocation, x86::X86Relocation, DynasmApi, DynasmError, DynasmLabelApi, VecAssembler};
+use dynasmrt::{dynasm, x86::X86Relocation, DynasmApi, DynasmLabelApi, VecAssembler};
 use rand::Rng;
 use crate::{obfuscation::x32::X32CodeAssembler, sgn::encoder::{SgnDecoderStub, ShikataGaNaiError}, x64_arch::registers::{RBP_FULL, RCX_FULL, RSP_FULL, get_save_random_general_purpose_register}};
 

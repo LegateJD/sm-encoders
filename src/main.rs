@@ -19,14 +19,12 @@ use std::{
     io::{Read, Write},
 };
 
-use clap::{arg, Parser, ValueEnum};
-use rand::rngs::{ChaCha12Rng, ChaCha20Rng};
-use rand::{Rng, RngExt, SeedableRng};
+use clap::{Parser, ValueEnum};
+use rand::RngExt;
 
 use crate::pipeline::encode::Pipeline;
-use crate::schema::encoder::{SchemaEncoderX64, SchemaEncoderX64ChaCha, SchemaEncoderX64Thread};
 use crate::{
-    core::encoder::{AsmInitWithSeed, Encoder},
+    core::encoder::Encoder,
     sgn::encoder::{SgnEncoderX64, SgnEncoderX64ThreadRng},
     xor_dynamic::encoder::XorDynamicEncoderX64ChaCha,
 };
@@ -67,6 +65,14 @@ struct Args {
     /// Save and restore registers in decoder stub (ignored if --pipeline is specified)
     #[arg(long, default_value_t = false)]
     save_registers: bool,
+
+    /// Bad characters as hex bytes, for example: 0x00 0x0a 0x0d
+    #[arg(long, value_parser = parse_hex_byte, num_args = 0..)]
+    badchars: Vec<u8>,
+
+    /// Require printable ASCII output (ignored if --pipeline is specified)
+    #[arg(long, default_value_t = false)]
+    ascii_printable: bool,
 
     /// Path to pipeline YAML configuration file
     #[arg(long, conflicts_with = "encoder_type")]
@@ -110,9 +116,11 @@ fn encode() -> Result<(), String> {
         plain_decoder: false,
         encoding_count: 1,
         save_registers: false,
+        badchars: vec![],
+        ascii_printable: false,
         pipeline: None,
         rng: RngAlgorithm::ChaCha,
-        seed: Some(42352),
+        seed: Some(4234),
     };
 
     let mut buf = vec![];
@@ -144,6 +152,8 @@ fn encode() -> Result<(), String> {
                     .set_plain_decoder(args.plain_decoder)
                     .set_encoding_count(args.encoding_count)
                     .set_save_registers(args.save_registers)
+                    .set_badchars(args.badchars.iter().copied().collect())
+                    .set_ascii_printable(args.ascii_printable)
                     .build_with_rng_seed(seed);
                 encoder.encode(&buf).map_err(|x| x.to_string())?
             }
@@ -152,6 +162,8 @@ fn encode() -> Result<(), String> {
                     .set_plain_decoder(args.plain_decoder)
                     .set_encoding_count(args.encoding_count)
                     .set_save_registers(args.save_registers)
+                    .set_badchars(args.badchars.iter().copied().collect())
+                    .set_ascii_printable(args.ascii_printable)
                     .build();
                 encoder.encode(&buf).map_err(|x| x.to_string())?
             }
@@ -160,6 +172,8 @@ fn encode() -> Result<(), String> {
                     .set_plain_decoder(args.plain_decoder)
                     .set_encoding_count(args.encoding_count)
                     .set_save_registers(args.save_registers)
+                    .set_badchars(args.badchars.iter().copied().collect())
+                    .set_ascii_printable(args.ascii_printable)
                     .build_with_rng_seed(seed);
                 encoder
                     .encode(&buf)
@@ -179,4 +193,13 @@ fn encode() -> Result<(), String> {
     output_file.write_all(&encoded).map_err(|x| x.to_string())?;
 
     Ok(())
+}
+
+fn parse_hex_byte(value: &str) -> Result<u8, String> {
+    let value = value
+        .strip_prefix("0x")
+        .or_else(|| value.strip_prefix("0X"))
+        .unwrap_or(value);
+
+    u8::from_str_radix(value, 16).map_err(|_| format!("Invalid hex byte: {}", value))
 }

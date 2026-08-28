@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-use dynasmrt::{aarch64::Aarch64Relocation, dynasm, x64::X64Relocation, x86::X86Relocation, DynasmApi, DynasmError, DynasmLabelApi, VecAssembler};
+use dynasmrt::{aarch64::Aarch64Relocation, VecAssembler};
 use rand::Rng;
 
-use crate::{obfuscation::{aarch64::AArch64CodeAssembler, x32::X32CodeAssembler}, sgn::encoder::{SgnDecoderStub, ShikataGaNaiError}};
+use crate::{obfuscation::aarch64::AArch64CodeAssembler, sgn::encoder::{SgnDecoderStub, ShikataGaNaiError}};
 use crate::arm64::registers::{get_random_general_purpose_register, get_safe_random_general_purpose_register};
 
 impl<RngType: Rng> SgnDecoderStub for AArch64CodeAssembler<RngType> {
     fn get_sgn_decoder_stub(
         &mut self,
-        seed: u8,
-        payload_size: usize,
+        _seed: u8,
+        _payload_size: usize,
     ) -> Result<Vec<u8>, ShikataGaNaiError> {
-        let mut assembler = VecAssembler::<Aarch64Relocation>::new(0);
+        let assembler = VecAssembler::<Aarch64Relocation>::new(0);
         let indexer_register = get_random_general_purpose_register(&mut self.rng);
         let seed_register =
             get_safe_random_general_purpose_register(&[indexer_register.clone()], &mut self.rng);
@@ -36,11 +36,11 @@ impl<RngType: Rng> SgnDecoderStub for AArch64CodeAssembler<RngType> {
             get_safe_random_general_purpose_register(&[indexer_register.clone(), seed_register.clone(), payload_register.clone()], &mut self.rng);
         let add_result_register =
             get_safe_random_general_purpose_register(&[indexer_register.clone(), seed_register.clone(), payload_register.clone(), xor_result_register.clone()], &mut self.rng);
-        let indexer_register_id = indexer_register.x as u32;
-        let seed_register_id = seed_register.x as u32;
-        let payload_siez_register_id = payload_register.x as u32;
-        let xor_result_register_register_id = xor_result_register.x as u32;
-        let add_result_register_register_id = add_result_register.x as u32;
+        let _indexer_register_id = indexer_register.x as u32;
+        let _seed_register_id = seed_register.x as u32;
+        let _payload_siez_register_id = payload_register.x as u32;
+        let _xor_result_register_register_id = xor_result_register.x as u32;
+        let _add_result_register_register_id = add_result_register.x as u32;
 
         /*dynasm!(assembler
             ; .arch aarch64

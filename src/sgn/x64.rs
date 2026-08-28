@@ -49,7 +49,7 @@ impl<RngType: Rng> SgnDecoderStub for X64CodeAssembler<RngType> {
 }
 
 impl From<DynasmError> for ShikataGaNaiError {
-    fn from(value: DynasmError) -> Self {
+    fn from(_value: DynasmError) -> Self {
         ShikataGaNaiError::AssemblerError
     }
 }

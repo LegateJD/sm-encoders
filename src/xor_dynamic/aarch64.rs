@@ -16,13 +16,13 @@
 
 use std::collections::HashSet;
 
-use dynasmrt::{aarch64::Aarch64Relocation, dynasm, x64::X64Relocation, x86::X86Relocation, DynasmApi, DynasmError, DynasmLabelApi, VecAssembler};
+use dynasmrt::{aarch64::Aarch64Relocation, dynasm, DynasmApi, DynasmLabelApi, VecAssembler};
 use rand::Rng;
 
 use crate::{obfuscation::aarch64::AArch64CodeAssembler, xor_dynamic::encoder::{XorDynamicEncoderError, XorDynamicStub, XorDecoderStub}};
 
 impl<RngType: Rng> XorDynamicStub for AArch64CodeAssembler<RngType> {
-    fn get_xor_dynamic_decoder_stub(&mut self, badchars: &HashSet<u8>) -> Result<XorDecoderStub, XorDynamicEncoderError> {
+    fn get_xor_dynamic_decoder_stub(&mut self, _badchars: &HashSet<u8>) -> Result<XorDecoderStub, XorDynamicEncoderError> {
         let mut assembler = VecAssembler::<Aarch64Relocation>::new(0);
 
         dynasm!(assembler

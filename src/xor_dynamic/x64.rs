@@ -27,7 +27,7 @@ use dynasmrt::{
 use rand::Rng;
 
 impl<RngType: Rng> XorDynamicStub for X64CodeAssembler<RngType> {
-    fn get_xor_dynamic_decoder_stub(&mut self, badchars: &HashSet<u8>) -> Result<XorDecoderStub, XorDynamicEncoderError> {
+    fn get_xor_dynamic_decoder_stub(&mut self, _badchars: &HashSet<u8>) -> Result<XorDecoderStub, XorDynamicEncoderError> {
         let link_register =
             get_save_random_general_purpose_register(&[RBP_FULL, RSP_FULL, RDI_FULL, RAX_FULL], &mut self.rng);
         let link_register_id = link_register.quad as u8;
@@ -101,8 +101,8 @@ impl<RngType: Rng> XorDynamicStub for X64CodeAssembler<RngType> {
         );
 
         let bytes = assembler.finalize()?;
-        let mut hashset = bytes.into_iter().collect::<HashSet<u8>>();
-        hashset.extend(badchars.iter().cloned());
+        let hashset = bytes.into_iter().collect::<HashSet<u8>>();
+        //hashset.extend(badchars.iter().cloned());
 
         let first_char = (0..=u8::MAX)
             .find(|x| !hashset.contains(x))
@@ -160,7 +160,7 @@ impl<RngType: Rng> XorDynamicStub for X64CodeAssembler<RngType> {
 }
 
 impl From<DynasmError> for XorDynamicEncoderError {
-    fn from(value: DynasmError) -> Self {
+    fn from(_value: DynasmError) -> Self {
         XorDynamicEncoderError::AssemblerError
     }
 }
