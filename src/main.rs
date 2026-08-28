@@ -118,7 +118,7 @@ fn encode() -> Result<(), String> {
         save_registers: false,
         badchars: vec![],
         ascii_printable: false,
-        pipeline: None,
+        pipeline: Some("pipeline.yaml".to_owned()),
         rng: RngAlgorithm::ChaCha,
         seed: Some(4234),
     };

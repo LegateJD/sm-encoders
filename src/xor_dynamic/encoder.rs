@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-use rand::{rngs::ChaCha20Rng, seq::SliceRandom};
+use rand::{rngs::{ChaCha20Rng, ThreadRng}, seq::SliceRandom};
 use std::collections::HashSet;
 use thiserror::Error;
 
@@ -30,6 +30,8 @@ use crate::{
 };
 
 pub type XorDynamicEncoderX64ChaCha = XorDynamicEncoder<X64CodeAssembler<ChaCha20Rng>>;
+
+pub type XorDynamicEncoderX64Thread = XorDynamicEncoder<X64CodeAssembler<ThreadRng>>;
 
 pub type XorDynamicEncoderX32ChaCha = XorDynamicEncoder<X32CodeAssembler<ChaCha20Rng>>;
 
@@ -250,7 +252,7 @@ where
                 save_registers_prefix.extend_from_slice(&full_binary);
                 full_binary = save_registers_prefix;
             }
-            
+
             if has_badchars(&full_binary, &self.badchars)
                 || (self.ascii_printable && !is_ascii_printable(&full_binary))
             {

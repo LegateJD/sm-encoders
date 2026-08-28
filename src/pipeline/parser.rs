@@ -36,7 +36,6 @@ pub struct PipelineDefinition {
 pub enum StageType {
     Sgn,
     XorDynamic,
-    Schema,
 }
 
 impl StageType {
@@ -44,7 +43,6 @@ impl StageType {
         match self {
             StageType::Sgn => "sgn",
             StageType::XorDynamic => "xor_dynamic",
-            StageType::Schema => "schema",
         }
     }
 }
@@ -74,21 +72,43 @@ impl Architecture {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum RngAlgorithm {
+    #[serde(rename = "chacha")]
+    ChaCha,
+    #[default]
+    Thread,
+}
+
+impl RngAlgorithm {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            RngAlgorithm::ChaCha => "chacha",
+            RngAlgorithm::Thread => "thread",
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StageConfigData {
     #[serde(default)]
     pub seed: u64,
     pub architecture: Architecture,
     #[serde(default)]
+    pub rng: RngAlgorithm,
+    #[serde(default)]
     pub plain_decoder: bool,
     #[serde(default)]
     pub save_registers: bool,
-    #[serde(default)]
+    #[serde(default = "default_encoding_count")]
     pub encoding_count: u32,
     #[serde(default)]
     pub badchars: Vec<u8>,
-    #[serde(default)]
-    pub schema_size: Option<usize>,
+}
+
+fn default_encoding_count() -> u32 {
+    1
 }
 
 impl PipelineConfig {
@@ -126,7 +146,7 @@ impl PipelineConfig {
     fn validate_stage(&self, stage: &StageConfig, idx: usize) -> Result<(), String> {
         // Validate stage type
         match stage.stage_type {
-            StageType::Sgn | StageType::XorDynamic | StageType::Schema => {},
+            StageType::Sgn | StageType::XorDynamic => {},
         }
 
         // Validate SGN-specific parameters
@@ -143,18 +163,6 @@ impl PipelineConfig {
                     "Stage {}: SGN encoding_count should not exceed 10 (got {})",
                     idx, stage.config.encoding_count
                 ));
-            }
-        }
-
-        // Validate schema-specific parameters
-        if stage.stage_type == StageType::Schema {
-            if let Some(size) = stage.config.schema_size {
-                if size == 0 {
-                    return Err(format!(
-                        "Stage {}: Schema size must be greater than 0",
-                        idx
-                    ));
-                }
             }
         }
 

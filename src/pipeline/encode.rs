@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-use crate::core::encoder::{AsmInitWithSeed, Encoder};
-use crate::pipeline::parser::{Architecture, PipelineConfig, StageConfig, StageType};
-use crate::schema::encoder::SchemaEncoderX64ChaCha;
-use crate::sgn::encoder::SgnEncoderX64;
-use crate::xor_dynamic::encoder::XorDynamicEncoderX64ChaCha;
+use crate::core::encoder::{AsmInit, AsmInitWithSeed, Encoder};
+use crate::pipeline::parser::{Architecture, PipelineConfig, RngAlgorithm, StageConfig, StageType};
+use crate::sgn::encoder::{SgnEncoderX64, SgnEncoderX64ThreadRng};
+use crate::xor_dynamic::encoder::{XorDynamicEncoderX64ChaCha, XorDynamicEncoderX64Thread};
 
 /// A processing stage that transforms bytes.
 pub trait Stage {
@@ -91,19 +90,30 @@ fn create_stage_from_config(config: &StageConfig) -> Result<Box<dyn Stage>, Stri
     match config.stage_type {
         StageType::Sgn => create_sgn_stage(config),
         StageType::XorDynamic => create_xor_dynamic_stage(config),
-        StageType::Schema => create_schema_stage(config),
     }
 }
 
 fn create_sgn_stage(config: &StageConfig) -> Result<Box<dyn Stage>, String> {
     match config.config.architecture {
             Architecture::X64 => {
-            let encoder = SgnEncoderX64::builder()
-                .set_plain_decoder(config.config.plain_decoder)
-                .set_encoding_count(config.config.encoding_count)
-                .set_save_registers(config.config.save_registers)
-                .build_with_rng_seed(config.config.seed);
-            Ok(Box::new(EncoderStage { encoder }))
+            match config.config.rng {
+                RngAlgorithm::ChaCha => {
+                    let encoder = SgnEncoderX64::builder()
+                        .set_plain_decoder(config.config.plain_decoder)
+                        .set_encoding_count(config.config.encoding_count)
+                        .set_save_registers(config.config.save_registers)
+                        .build_with_rng_seed(config.config.seed);
+                    Ok(Box::new(EncoderStage { encoder }))
+                }
+                RngAlgorithm::Thread => {
+                    let encoder = SgnEncoderX64ThreadRng::builder()
+                        .set_plain_decoder(config.config.plain_decoder)
+                        .set_encoding_count(config.config.encoding_count)
+                        .set_save_registers(config.config.save_registers)
+                        .build();
+                    Ok(Box::new(EncoderStage { encoder }))
+                }
+            }
         }
         _ => unreachable!()
         /*Architecture::X32 => {
@@ -120,31 +130,24 @@ fn create_sgn_stage(config: &StageConfig) -> Result<Box<dyn Stage>, String> {
 fn create_xor_dynamic_stage(config: &StageConfig) -> Result<Box<dyn Stage>, String> {
     match config.config.architecture {
         Architecture::X64 => {
-            let encoder = XorDynamicEncoderX64ChaCha::builder()
-                .set_encoding_count(config.config.encoding_count)
-                .set_save_registers(config.config.save_registers)
-                .build_with_rng_seed(config.config.seed);
-            Ok(Box::new(EncoderStage { encoder }))
+            match config.config.rng {
+                RngAlgorithm::ChaCha => {
+                    let encoder = XorDynamicEncoderX64ChaCha::builder()
+                        .set_encoding_count(config.config.encoding_count)
+                        .set_save_registers(config.config.save_registers)
+                        .build_with_rng_seed(config.config.seed);
+                    Ok(Box::new(EncoderStage { encoder }))
+                }
+                RngAlgorithm::Thread => {
+                    let encoder = XorDynamicEncoderX64Thread::builder()
+                        .set_encoding_count(config.config.encoding_count)
+                        .set_save_registers(config.config.save_registers)
+                        .build();
+                    Ok(Box::new(EncoderStage { encoder }))
+                }
+            }
         }
         _ => Err(format!("Unsupported architecture for XorDynamic: {}", config.config.architecture.as_str())),
-    }
-}
-
-fn create_schema_stage(config: &StageConfig) -> Result<Box<dyn Stage>, String> {
-    match config.config.architecture {
-        Architecture::X64 => {
-            let encoder = SchemaEncoderX64ChaCha::new_with_rng(config.config.seed);
-            Ok(Box::new(EncoderStage { encoder }))
-        }
-        _ => unreachable!()
-        /*Architecture::X32 => {
-            let encoder = SchemaEncoderX32::new(config.config.seed);
-            Ok(Box::new(EncoderStage { encoder }))
-        }
-        Architecture::AArch64 => {
-            let encoder = SchemaEncoderAArch64::new(config.config.seed);
-            Ok(Box::new(EncoderStage { encoder }))
-        }*/
     }
 }
 
