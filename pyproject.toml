@@ -16,4 +16,5 @@ classifiers = [
 [tool.maturin]
 features = ["python"]
 python-source = "python"
+module-name = "sm_encoders._sm_encoders"
 include = ["python/sm_encoders/__init__.pyi", "python/sm_encoders/py.typed"]

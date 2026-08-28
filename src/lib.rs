@@ -30,7 +30,8 @@ use pyo3::prelude::*;
 
 #[cfg(feature = "python")]
 #[pymodule]
-fn sm_encoders(_py: Python, m: &PyModule) -> PyResult<()> {
+fn _sm_encoders(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<sgn::py_bindings::PySgnEncoderX64>()?;
+    m.add_class::<xor_dynamic::py_bindings::PyXorDynamicEncoderX64>()?;
     Ok(())
 }

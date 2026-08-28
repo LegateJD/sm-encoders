@@ -14,44 +14,37 @@
  * limitations under the License.
  */
 
-#[cfg(feature = "python")]
-use pyo3::prelude::*;
-#[cfg(feature = "python")]
-use pyo3::exceptions::{PyRuntimeError, PyValueError};
-
-#[cfg(feature = "python")]
 use std::collections::HashSet;
 
-#[cfg(feature = "python")]
-use crate::core::encoder::Encoder;
-#[cfg(feature = "python")]
-use crate::sgn::encoder::{SgnEncoderX64, SgnEncoderX64ThreadRng, ShikataGaNaiError};
+use pyo3::exceptions::{PyRuntimeError, PyValueError};
+use pyo3::prelude::*;
 
-#[cfg(feature = "python")]
-enum SgnEncoderX64Inner {
-    ChaCha(SgnEncoderX64),
-    Thread(SgnEncoderX64ThreadRng),
+use crate::core::encoder::Encoder;
+use crate::xor_dynamic::encoder::{
+    XorDynamicEncoderError, XorDynamicEncoderX64ChaCha, XorDynamicEncoderX64Thread,
+};
+
+enum XorDynamicEncoderX64Inner {
+    ChaCha(XorDynamicEncoderX64ChaCha),
+    Thread(XorDynamicEncoderX64Thread),
 }
 
-#[cfg(feature = "python")]
-impl SgnEncoderX64Inner {
-    fn encode(&mut self, payload: &[u8]) -> Result<Vec<u8>, ShikataGaNaiError> {
+impl XorDynamicEncoderX64Inner {
+    fn encode(&mut self, payload: &[u8]) -> Result<Vec<u8>, XorDynamicEncoderError> {
         match self {
-            SgnEncoderX64Inner::ChaCha(encoder) => encoder.encode(payload),
-            SgnEncoderX64Inner::Thread(encoder) => encoder.encode(payload),
+            XorDynamicEncoderX64Inner::ChaCha(encoder) => encoder.encode(payload),
+            XorDynamicEncoderX64Inner::Thread(encoder) => encoder.encode(payload),
         }
     }
 }
 
-#[cfg(feature = "python")]
 #[pyclass(unsendable)]
-pub struct PySgnEncoderX64 {
-    encoder: SgnEncoderX64Inner,
+pub struct PyXorDynamicEncoderX64 {
+    encoder: XorDynamicEncoderX64Inner,
 }
 
-#[cfg(feature = "python")]
 #[pymethods]
-impl PySgnEncoderX64 {
+impl PyXorDynamicEncoderX64 {
     /// `rng` selects the assembler's RNG source: "chacha" (seeded, deterministic)
     /// or "thread" (OS RNG, ignores `seed`).
     #[new]
@@ -76,8 +69,8 @@ impl PySgnEncoderX64 {
         let badchars: HashSet<u8> = badchars.into_iter().collect();
 
         let encoder = match rng {
-            "chacha" => SgnEncoderX64Inner::ChaCha(
-                SgnEncoderX64::builder()
+            "chacha" => XorDynamicEncoderX64Inner::ChaCha(
+                XorDynamicEncoderX64ChaCha::builder()
                     .set_plain_decoder(plain_decoder)
                     .set_encoding_count(encoding_count)
                     .set_save_registers(save_registers)
@@ -85,8 +78,8 @@ impl PySgnEncoderX64 {
                     .set_ascii_printable(ascii_printable)
                     .build_with_rng_seed(seed),
             ),
-            "thread" => SgnEncoderX64Inner::Thread(
-                SgnEncoderX64ThreadRng::builder()
+            "thread" => XorDynamicEncoderX64Inner::Thread(
+                XorDynamicEncoderX64Thread::builder()
                     .set_plain_decoder(plain_decoder)
                     .set_encoding_count(encoding_count)
                     .set_save_registers(save_registers)
@@ -112,6 +105,6 @@ impl PySgnEncoderX64 {
     }
 
     fn __repr__(&self) -> String {
-        "SgnEncoderX64()".to_string()
+        "XorDynamicEncoderX64()".to_string()
     }
 }

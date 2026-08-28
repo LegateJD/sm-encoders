@@ -1,0 +1,17 @@
+pipeline:
+  name: "multi-layer-obfuscation"
+  description: "Apply multiple encoding stages"
+  stages:
+    - type: "sgn"
+      config:
+        seed: 97
+        rng: "chacha" # "chacha" (seeded, deterministic) or "thread" (ignores seed, default)
+        plain_decoder: false
+        architecture: "x64"
+
+    - type: "xor_dynamic"
+      config:
+        seed: 0x7F
+        architecture: "x64"
+        rng: "chacha" # "chacha" (seeded, deterministic) or "thread" (ignores seed, default)
+        plain_decoder: false
