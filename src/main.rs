@@ -71,8 +71,8 @@ struct Args {
     badchars: Vec<u8>,
 
     /// Require printable ASCII output (ignored if --pipeline is specified)
-    #[arg(long, default_value_t = false)]
-    ascii_printable: bool,
+    //#[arg(long, default_value_t = false)]
+    //ascii_printable: bool,
 
     /// Path to pipeline YAML configuration file
     #[arg(long, conflicts_with = "encoder_type")]
@@ -117,7 +117,7 @@ fn encode() -> Result<(), String> {
         encoding_count: 1,
         save_registers: false,
         badchars: vec![],
-        ascii_printable: false,
+        //ascii_printable: false,
         pipeline: Some("pipeline.yaml".to_owned()),
         rng: RngAlgorithm::ChaCha,
         seed: Some(4234),
@@ -153,7 +153,7 @@ fn encode() -> Result<(), String> {
                     .set_encoding_count(args.encoding_count)
                     .set_save_registers(args.save_registers)
                     .set_badchars(args.badchars.iter().copied().collect())
-                    .set_ascii_printable(args.ascii_printable)
+                    //.set_ascii_printable(args.ascii_printable)
                     .build_with_rng_seed(seed);
                 encoder.encode(&buf).map_err(|x| x.to_string())?
             }
@@ -163,7 +163,7 @@ fn encode() -> Result<(), String> {
                     .set_encoding_count(args.encoding_count)
                     .set_save_registers(args.save_registers)
                     .set_badchars(args.badchars.iter().copied().collect())
-                    .set_ascii_printable(args.ascii_printable)
+                    //.set_ascii_printable(args.ascii_printable)
                     .build();
                 encoder.encode(&buf).map_err(|x| x.to_string())?
             }
@@ -173,7 +173,7 @@ fn encode() -> Result<(), String> {
                     .set_encoding_count(args.encoding_count)
                     .set_save_registers(args.save_registers)
                     .set_badchars(args.badchars.iter().copied().collect())
-                    .set_ascii_printable(args.ascii_printable)
+                    //.set_ascii_printable(args.ascii_printable)
                     .build_with_rng_seed(seed);
                 encoder
                     .encode(&buf)

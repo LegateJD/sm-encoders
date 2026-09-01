@@ -32,7 +32,6 @@ Options:
                                        Number of encoding iterations (ignored if --pipeline is specified) [default: 1]
       --save-registers                Save and restore registers in decoder stub (ignored if --pipeline is specified)
       --badchars <BADCHARS>...        Bad characters as hex bytes, for example: 0x00 0x0a 0x0d
-      --ascii-printable               Require printable ASCII output (ignored if --pipeline is specified)
       --pipeline <PIPELINE>           Path to pipeline YAML configuration file
       --rng <RNG>                     RNG algorithm used by assembler internals (ignored if --pipeline is specified)
                                        [default: thread] [possible values: thread, cha-cha]
