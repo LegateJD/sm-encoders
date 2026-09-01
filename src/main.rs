@@ -108,21 +108,7 @@ fn main() {
 }
 
 fn encode() -> Result<(), String> {
-    //let args = Args::parse();
-    let args = Args {
-        input: "input.bin".to_owned(),
-        output: "output.bin".to_owned(),
-        encoder_type: Some(EncoderType::XorDynamic),
-        plain_decoder: false,
-        encoding_count: 1,
-        save_registers: false,
-        badchars: vec![],
-        //ascii_printable: false,
-        pipeline: Some("pipeline.yaml".to_owned()),
-        rng: RngAlgorithm::ChaCha,
-        seed: Some(4234),
-    };
-
+    let args = Args::parse();
     let mut buf = vec![];
     let mut input_file = File::open(&args.input).map_err(|x| x.to_string())?;
     input_file
