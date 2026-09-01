@@ -25,7 +25,7 @@ use rand::RngExt;
 use crate::pipeline::encode::Pipeline;
 use crate::{
     core::encoder::Encoder,
-    sgn::encoder::{SgnEncoderX64, SgnEncoderX64ThreadRng},
+    sgn::encoder::{SgnEncoderX64ChaCha, SgnEncoderX64ThreadRng},
     xor_dynamic::encoder::XorDynamicEncoderX64ChaCha,
 };
 
@@ -94,10 +94,10 @@ enum EncoderType {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
-enum RngAlgorithm {
-    #[default]
-    Thread,
+pub enum RngAlgorithm {
     ChaCha,
+    #[default]
+    Thread
 }
 
 fn main() {
@@ -148,7 +148,7 @@ fn encode() -> Result<(), String> {
 
         match (encoder_type, args.rng) {
             (EncoderType::ShikataGaNai, RngAlgorithm::ChaCha) => {
-                let mut encoder = SgnEncoderX64::builder()
+                let mut encoder = SgnEncoderX64ChaCha::builder()
                     .set_plain_decoder(args.plain_decoder)
                     .set_encoding_count(args.encoding_count)
                     .set_save_registers(args.save_registers)

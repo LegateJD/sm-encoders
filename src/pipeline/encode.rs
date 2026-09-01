@@ -16,7 +16,7 @@
 
 use crate::core::encoder::{AsmInit, AsmInitWithSeed, Encoder};
 use crate::pipeline::parser::{Architecture, PipelineConfig, RngAlgorithm, StageConfig, StageType};
-use crate::sgn::encoder::{SgnEncoderX64, SgnEncoderX64ThreadRng};
+use crate::sgn::encoder::{SgnEncoderX64ChaCha, SgnEncoderX64ThreadRng};
 use crate::xor_dynamic::encoder::{XorDynamicEncoderX64ChaCha, XorDynamicEncoderX64Thread};
 
 /// A processing stage that transforms bytes.
@@ -98,7 +98,7 @@ fn create_sgn_stage(config: &StageConfig) -> Result<Box<dyn Stage>, String> {
             Architecture::X64 => {
             match config.config.rng {
                 RngAlgorithm::ChaCha => {
-                    let encoder = SgnEncoderX64::builder()
+                    let encoder = SgnEncoderX64ChaCha::builder()
                         .set_plain_decoder(config.config.plain_decoder)
                         .set_encoding_count(config.config.encoding_count)
                         .set_save_registers(config.config.save_registers)

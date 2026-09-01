@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-use crate::core::encoder::Encoder;
-use crate::sgn::encoder::SgnEncoderX64;
+use crate::{
+    core::encoder::Encoder, sgn::encoder::{SgnEncoderX64ChaCha, SgnEncoderX64ThreadRng},
+};
 
 #[repr(C)]
 pub struct CByteArray {
@@ -25,22 +26,35 @@ pub struct CByteArray {
 }
 
 #[no_mangle]
-pub extern "C" fn sgn_encoder_x64_new(
+pub extern "C" fn sgn_encoder_x64_chacha_new(
     seed: u8,
     plain_decoder: bool,
     encoding_count: u32,
-    save_registers: bool
-) -> *mut SgnEncoderX64 {
-    let encoder = Box::new(SgnEncoderX64::builder()
+    save_registers: bool,
+    ascii_printable: bool,
+    badchars: *const u8,
+    badchars_len: usize,
+) -> *mut SgnEncoderX64ChaCha {
+    let mut encoder_builder = SgnEncoderX64ChaCha::builder()
         .set_plain_decoder(plain_decoder)
         .set_encoding_count(encoding_count)
         .set_save_registers(save_registers)
-        .build_with_rng_seed(seed as u64));
+        .set_ascii_printable(ascii_printable);
+
+    if !badchars.is_null() && badchars_len > 0 {
+        let badchars_slice = unsafe { std::slice::from_raw_parts(badchars, badchars_len) };
+        let badchars: std::collections::HashSet<u8> = badchars_slice.iter().copied().collect();
+        encoder_builder = encoder_builder.set_badchars(badchars);
+    }
+    let encoder = Box::new(
+        encoder_builder
+            .build_with_rng_seed(seed as u64),
+    );
     Box::into_raw(encoder)
 }
 
 #[no_mangle]
-pub extern "C" fn sgn_encoder_x64_free(encoder: *mut SgnEncoderX64) {
+pub extern "C" fn sgn_encoder_x64_chacha_free(encoder: *mut SgnEncoderX64ChaCha) {
     if !encoder.is_null() {
         unsafe {
             drop(Box::from_raw(encoder));
@@ -49,8 +63,8 @@ pub extern "C" fn sgn_encoder_x64_free(encoder: *mut SgnEncoderX64) {
 }
 
 #[no_mangle]
-pub extern "C" fn sgn_encoder_x64_encode(
-    encoder: *mut SgnEncoderX64,
+pub extern "C" fn sgn_encoder_x64_chacha_encode(
+    encoder: *mut SgnEncoderX64ChaCha,
     payload: *const u8,
     payload_len: usize,
     out: *mut CByteArray,
@@ -92,6 +106,75 @@ pub extern "C" fn sgn_free_byte_array(array: *mut CByteArray) {
                     array_ref.capacity,
                 ));
             }
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn sgn_encoder_x64_thread_new(
+    plain_decoder: bool,
+    encoding_count: u32,
+    save_registers: bool,
+    ascii_printable: bool,
+    badchars: *const u8,
+    badchars_len: usize,
+) -> *mut SgnEncoderX64ThreadRng {
+    let mut encoder_builder = SgnEncoderX64ThreadRng::builder()
+        .set_plain_decoder(plain_decoder)
+        .set_encoding_count(encoding_count)
+        .set_save_registers(save_registers)
+        .set_ascii_printable(ascii_printable);
+
+    if  !badchars.is_null() && badchars_len > 0 {
+        let badchars_slice = unsafe { std::slice::from_raw_parts(badchars, badchars_len) };
+        let badchars: std::collections::HashSet<u8> = badchars_slice.iter().copied().collect();
+        encoder_builder = encoder_builder.set_badchars(badchars);
+    }
+
+    let encoder = Box::new(
+        encoder_builder
+            .build(),
+    );
+    Box::into_raw(encoder)
+}
+
+#[no_mangle]
+pub extern "C" fn sgn_encoder_x64_thread_free(encoder: *mut SgnEncoderX64ThreadRng) {
+    if !encoder.is_null() {
+        unsafe {
+            drop(Box::from_raw(encoder));
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn sgn_encoder_x64_thread_encode(
+    encoder: *mut SgnEncoderX64ThreadRng,
+    payload: *const u8,
+    payload_len: usize,
+    out: *mut CByteArray,
+) -> i32 {
+    if encoder.is_null() || payload.is_null() || out.is_null() {
+        return -1;
+    }
+
+    unsafe {
+        let encoder_ref = &mut *encoder;
+        let payload_slice = std::slice::from_raw_parts(payload, payload_len);
+
+        match encoder_ref.encode(payload_slice) {
+            Ok(mut result) => {
+                let len = result.len();
+                let capacity = result.capacity();
+                let data = result.as_mut_ptr();
+                std::mem::forget(result);
+
+                (*out).data = data;
+                (*out).len = len;
+                (*out).capacity = capacity;
+                0
+            }
+            Err(_) => -2,
         }
     }
 }

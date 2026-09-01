@@ -40,7 +40,7 @@ pub enum ShikataGaNaiError {
     BadCharacters,
 }
 
-pub type SgnEncoderX64 = SgnEncoder<X64CodeAssembler<ChaCha20Rng>>;
+pub type SgnEncoderX64ChaCha = SgnEncoder<X64CodeAssembler<ChaCha20Rng>>;
 pub type SgnEncoderX32 = SgnEncoder<X32CodeAssembler<ChaCha20Rng>>;
 pub type SgnEncoderAArch64 = SgnEncoder<AArch64CodeAssembler<ChaCha20Rng>>;
 pub type SgnEncoderX64ThreadRng = SgnEncoder<X64CodeAssembler<ThreadRng>>;
