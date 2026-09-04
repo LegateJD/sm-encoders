@@ -25,11 +25,11 @@ use std::collections::HashSet;
 #[cfg(feature = "python")]
 use crate::core::encoder::Encoder;
 #[cfg(feature = "python")]
-use crate::sgn::encoder::{SgnEncoderX64, SgnEncoderX64ThreadRng, ShikataGaNaiError};
+use crate::sgn::encoder::{SgnEncoderX64ChaCha, SgnEncoderX64ThreadRng, ShikataGaNaiError};
 
 #[cfg(feature = "python")]
 enum SgnEncoderX64Inner {
-    ChaCha(SgnEncoderX64),
+    ChaCha(SgnEncoderX64ChaCha),
     Thread(SgnEncoderX64ThreadRng),
 }
 
@@ -45,13 +45,13 @@ impl SgnEncoderX64Inner {
 
 #[cfg(feature = "python")]
 #[pyclass(unsendable)]
-pub struct PySgnEncoderX64 {
+pub struct SgnEncoderX64 {
     encoder: SgnEncoderX64Inner,
 }
 
 #[cfg(feature = "python")]
 #[pymethods]
-impl PySgnEncoderX64 {
+impl SgnEncoderX64 {
     /// `rng` selects the assembler's RNG source: "chacha" (seeded, deterministic)
     /// or "thread" (OS RNG, ignores `seed`).
     #[new]
@@ -61,7 +61,6 @@ impl PySgnEncoderX64 {
         encoding_count=1,
         save_registers=false,
         badchars=vec![],
-        ascii_printable=false,
         rng="thread"
     ))]
     fn new(
@@ -70,19 +69,17 @@ impl PySgnEncoderX64 {
         encoding_count: u32,
         save_registers: bool,
         badchars: Vec<u8>,
-        ascii_printable: bool,
         rng: &str,
     ) -> PyResult<Self> {
         let badchars: HashSet<u8> = badchars.into_iter().collect();
 
         let encoder = match rng {
             "chacha" => SgnEncoderX64Inner::ChaCha(
-                SgnEncoderX64::builder()
+                SgnEncoderX64ChaCha::builder()
                     .set_plain_decoder(plain_decoder)
                     .set_encoding_count(encoding_count)
                     .set_save_registers(save_registers)
                     .set_badchars(badchars)
-                    .set_ascii_printable(ascii_printable)
                     .build_with_rng_seed(seed),
             ),
             "thread" => SgnEncoderX64Inner::Thread(
@@ -91,7 +88,6 @@ impl PySgnEncoderX64 {
                     .set_encoding_count(encoding_count)
                     .set_save_registers(save_registers)
                     .set_badchars(badchars)
-                    .set_ascii_printable(ascii_printable)
                     .build(),
             ),
             other => {

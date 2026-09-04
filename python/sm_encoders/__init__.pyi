@@ -4,7 +4,7 @@ from typing import Literal
 
 RngAlgorithm = Literal["chacha", "thread"]
 
-class PySgnEncoderX64:
+class SgnEncoderX64:
     """SGN (Shikata Ga Nai) Encoder for x64 architecture"""
     def __init__(
         self,
@@ -13,12 +13,11 @@ class PySgnEncoderX64:
         encoding_count: int = 1,
         save_registers: bool = False,
         badchars: list[int] = ...,
-        ascii_printable: bool = False,
         rng: RngAlgorithm = "thread",
     ) -> None: ...
     def encode(self, payload: bytes) -> bytes: ...
 
-class PyXorDynamicEncoderX64:
+class XorDynamicEncoderX64:
     """XOR Dynamic Encoder for x64 architecture"""
     def __init__(
         self,
@@ -27,7 +26,6 @@ class PyXorDynamicEncoderX64:
         encoding_count: int = 1,
         save_registers: bool = False,
         badchars: list[int] = ...,
-        ascii_printable: bool = False,
         rng: RngAlgorithm = "thread",
     ) -> None: ...
     def encode(self, payload: bytes) -> bytes: ...

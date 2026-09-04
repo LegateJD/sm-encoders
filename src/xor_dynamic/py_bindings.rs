@@ -39,12 +39,12 @@ impl XorDynamicEncoderX64Inner {
 }
 
 #[pyclass(unsendable)]
-pub struct PyXorDynamicEncoderX64 {
+pub struct XorDynamicEncoderX64 {
     encoder: XorDynamicEncoderX64Inner,
 }
 
 #[pymethods]
-impl PyXorDynamicEncoderX64 {
+impl XorDynamicEncoderX64 {
     /// `rng` selects the assembler's RNG source: "chacha" (seeded, deterministic)
     /// or "thread" (OS RNG, ignores `seed`).
     #[new]
@@ -54,7 +54,6 @@ impl PyXorDynamicEncoderX64 {
         encoding_count=1,
         save_registers=false,
         badchars=vec![],
-        ascii_printable=false,
         rng="thread"
     ))]
     fn new(
@@ -63,7 +62,6 @@ impl PyXorDynamicEncoderX64 {
         encoding_count: u32,
         save_registers: bool,
         badchars: Vec<u8>,
-        ascii_printable: bool,
         rng: &str,
     ) -> PyResult<Self> {
         let badchars: HashSet<u8> = badchars.into_iter().collect();
@@ -75,7 +73,6 @@ impl PyXorDynamicEncoderX64 {
                     .set_encoding_count(encoding_count)
                     .set_save_registers(save_registers)
                     .set_badchars(badchars)
-                    .set_ascii_printable(ascii_printable)
                     .build_with_rng_seed(seed),
             ),
             "thread" => XorDynamicEncoderX64Inner::Thread(
@@ -84,7 +81,6 @@ impl PyXorDynamicEncoderX64 {
                     .set_encoding_count(encoding_count)
                     .set_save_registers(save_registers)
                     .set_badchars(badchars)
-                    .set_ascii_printable(ascii_printable)
                     .build(),
             ),
             other => {

@@ -1,5 +1,7 @@
+#include <stdint.h>
 #include <stdio.h>
 #include "sgn_encoder.h"
+#include <stddef.h>
 
 // mov    eax,0x42
 // ret
@@ -8,32 +10,30 @@ unsigned char shellcode[] = {
 };
 
 int main() {
-   SgnEncoderX64ChaCha* encoder = sgn_encoder_x64_chacha_new(54, false, 1, false, false, NULL, 0);
+    SgnEncoderX64ChaCha* encoder = sgn_encoder_x64_chacha_new(54, false, 1, false, NULL, 0);
 
-   if (encoder == NULL) {
-       fprintf(stderr, "Failed to create encoder\n");
-       return 1;
-   }
+    if (encoder == NULL) {
+        fprintf(stderr, "Failed to create encoder\n");
+        return 1;
+    }
 
-   CByteArray out = { .data = NULL, .len = 0, .capacity = 0 };
-   printf("Encoding!\n");
-   int result = sgn_encoder_x64_chacha_encode(encoder, shellcode, sizeof(shellcode), &out);
+    CByteArray out = { .data = NULL, .len = 0, .capacity = 0 };
+    printf("Encoding!\n");
+    int32_t result = sgn_encoder_x64_chacha_encode(encoder, shellcode, sizeof(shellcode), &out);
+    sgn_encoder_x64_chacha_free(encoder);
 
-   if (result != 0) {
-       fprintf(stderr, "Failed to encode payload \n");
-       return 1;
-   }
+    if (result != 0) {
+        fprintf(stderr, "Failed to encode payload\n");
+        return 1;
+    }
 
-   uint8_t *data = out.data;
-   size_t len = out.len;
+    printf("Payload:\n");
 
-   printf("Payload:\n");
+    for (size_t i = 0; i < out.len; i++) {
+        printf("0x%02x%s", out.data[i], (i + 1 < out.len) ? ", " : "\n");
+    }
 
-   for (size_t i = 0; i < len; i++) {
-       printf("0x%02x%s", data[i], (i + 1 < len) ? ", " : "\n");
-   }
+    sgn_free_byte_array(&out);
 
-   sgn_encoder_x64_chacha_free(encoder);
-
-   return 0;
+    return 0;
 }

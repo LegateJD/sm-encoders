@@ -24,6 +24,7 @@ pub mod x64_arch;
 pub mod xor_dynamic;
 pub mod arm64;
 pub use sgn::c_bindings::*;
+pub use xor_dynamic::c_bindings::*;
 
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
@@ -31,7 +32,7 @@ use pyo3::prelude::*;
 #[cfg(feature = "python")]
 #[pymodule]
 fn _sm_encoders(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<sgn::py_bindings::PySgnEncoderX64>()?;
-    m.add_class::<xor_dynamic::py_bindings::PyXorDynamicEncoderX64>()?;
+    m.add_class::<sgn::py_bindings::SgnEncoderX64>()?;
+    m.add_class::<xor_dynamic::py_bindings::XorDynamicEncoderX64>()?;
     Ok(())
 }

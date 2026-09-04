@@ -1,6 +1,6 @@
-from sm_encoders import PySgnEncoderX64, PyXorDynamicEncoderX64
+from sm_encoders import SgnEncoderX64, XorDynamicEncoderX64
 
-enc = PySgnEncoderX64(seed=1234, rng="chacha")
+enc = SgnEncoderX64(seed=1234, rng="chacha")
 
 print("Encoding:")
 

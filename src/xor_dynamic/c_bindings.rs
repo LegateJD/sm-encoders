@@ -15,26 +15,21 @@
  */
 
 use crate::{
-    core::encoder::Encoder, sgn::encoder::{SgnEncoderX64ChaCha, SgnEncoderX64ThreadRng},
+    core::encoder::Encoder,
+    sgn::c_bindings::CByteArray,
+    xor_dynamic::encoder::{XorDynamicEncoderX64ChaCha, XorDynamicEncoderX64Thread},
 };
 
-#[repr(C)]
-pub struct CByteArray {
-    pub data: *mut u8,
-    pub len: usize,
-    pub capacity: usize,
-}
-
 #[no_mangle]
-pub extern "C" fn sgn_encoder_x64_chacha_new(
+pub extern "C" fn xor_dynamic_encoder_x64_chacha_new(
     seed: u64,
     plain_decoder: bool,
     encoding_count: u32,
     save_registers: bool,
     badchars: *const u8,
     badchars_len: usize,
-) -> *mut SgnEncoderX64ChaCha {
-    let mut encoder_builder = SgnEncoderX64ChaCha::builder()
+) -> *mut XorDynamicEncoderX64ChaCha {
+    let mut encoder_builder = XorDynamicEncoderX64ChaCha::builder()
         .set_plain_decoder(plain_decoder)
         .set_encoding_count(encoding_count)
         .set_save_registers(save_registers);
@@ -44,15 +39,13 @@ pub extern "C" fn sgn_encoder_x64_chacha_new(
         let badchars: std::collections::HashSet<u8> = badchars_slice.iter().copied().collect();
         encoder_builder = encoder_builder.set_badchars(badchars);
     }
-    let encoder = Box::new(
-        encoder_builder
-            .build_with_rng_seed(seed as u64),
-    );
+
+    let encoder = Box::new(encoder_builder.build_with_rng_seed(seed));
     Box::into_raw(encoder)
 }
 
 #[no_mangle]
-pub extern "C" fn sgn_encoder_x64_chacha_free(encoder: *mut SgnEncoderX64ChaCha) {
+pub extern "C" fn xor_dynamic_encoder_x64_chacha_free(encoder: *mut XorDynamicEncoderX64ChaCha) {
     if !encoder.is_null() {
         unsafe {
             drop(Box::from_raw(encoder));
@@ -61,8 +54,8 @@ pub extern "C" fn sgn_encoder_x64_chacha_free(encoder: *mut SgnEncoderX64ChaCha)
 }
 
 #[no_mangle]
-pub extern "C" fn sgn_encoder_x64_chacha_encode(
-    encoder: *mut SgnEncoderX64ChaCha,
+pub extern "C" fn xor_dynamic_encoder_x64_chacha_encode(
+    encoder: *mut XorDynamicEncoderX64ChaCha,
     payload: *const u8,
     payload_len: usize,
     out: *mut CByteArray,
@@ -93,49 +86,30 @@ pub extern "C" fn sgn_encoder_x64_chacha_encode(
 }
 
 #[no_mangle]
-pub extern "C" fn sgn_free_byte_array(array: *mut CByteArray) {
-    if !array.is_null() {
-        unsafe {
-            let array_ref = &*array;
-            if !array_ref.data.is_null() {
-                drop(Vec::from_raw_parts(
-                    array_ref.data,
-                    array_ref.len,
-                    array_ref.capacity,
-                ));
-            }
-        }
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn sgn_encoder_x64_thread_new(
+pub extern "C" fn xor_dynamic_encoder_x64_thread_new(
     plain_decoder: bool,
     encoding_count: u32,
     save_registers: bool,
     badchars: *const u8,
     badchars_len: usize,
-) -> *mut SgnEncoderX64ThreadRng {
-    let mut encoder_builder = SgnEncoderX64ThreadRng::builder()
+) -> *mut XorDynamicEncoderX64Thread {
+    let mut encoder_builder = XorDynamicEncoderX64Thread::builder()
         .set_plain_decoder(plain_decoder)
         .set_encoding_count(encoding_count)
         .set_save_registers(save_registers);
 
-    if  !badchars.is_null() && badchars_len > 0 {
+    if !badchars.is_null() && badchars_len > 0 {
         let badchars_slice = unsafe { std::slice::from_raw_parts(badchars, badchars_len) };
         let badchars: std::collections::HashSet<u8> = badchars_slice.iter().copied().collect();
         encoder_builder = encoder_builder.set_badchars(badchars);
     }
 
-    let encoder = Box::new(
-        encoder_builder
-            .build(),
-    );
+    let encoder = Box::new(encoder_builder.build());
     Box::into_raw(encoder)
 }
 
 #[no_mangle]
-pub extern "C" fn sgn_encoder_x64_thread_free(encoder: *mut SgnEncoderX64ThreadRng) {
+pub extern "C" fn xor_dynamic_encoder_x64_thread_free(encoder: *mut XorDynamicEncoderX64Thread) {
     if !encoder.is_null() {
         unsafe {
             drop(Box::from_raw(encoder));
@@ -144,8 +118,8 @@ pub extern "C" fn sgn_encoder_x64_thread_free(encoder: *mut SgnEncoderX64ThreadR
 }
 
 #[no_mangle]
-pub extern "C" fn sgn_encoder_x64_thread_encode(
-    encoder: *mut SgnEncoderX64ThreadRng,
+pub extern "C" fn xor_dynamic_encoder_x64_thread_encode(
+    encoder: *mut XorDynamicEncoderX64Thread,
     payload: *const u8,
     payload_len: usize,
     out: *mut CByteArray,
