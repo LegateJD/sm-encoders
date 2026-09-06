@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+// dynasm's register macros (Rq/Rd/Rb/...) expand to a no-op `.into()` when the id is already `u8`.
+#![allow(clippy::useless_conversion)]
+
 use std::collections::HashSet;
 
 use crate::{
@@ -38,13 +41,7 @@ impl<RngType: Rng> XorDynamicStub for X64CodeAssembler<RngType> {
         let link_register_id = link_register.quad as u8;
 
         let jmp_register = get_save_random_general_purpose_register(
-            &[
-                RBP_FULL,
-                RSP_FULL,
-                RDI_FULL,
-                RAX_FULL,
-                link_register.clone(),
-            ],
+            &[RBP_FULL, RSP_FULL, RDI_FULL, RAX_FULL, *link_register],
             &mut self.rng,
         );
         let jmp_register_id = jmp_register.quad as u8;
@@ -56,8 +53,8 @@ impl<RngType: Rng> XorDynamicStub for X64CodeAssembler<RngType> {
                 RSP_FULL,
                 RDI_FULL,
                 RAX_FULL,
-                link_register.clone(),
-                jmp_register.clone(),
+                *link_register,
+                *jmp_register,
             ],
             &mut self.rng,
         );
@@ -69,9 +66,9 @@ impl<RngType: Rng> XorDynamicStub for X64CodeAssembler<RngType> {
                 RSP_FULL,
                 RDI_FULL,
                 RAX_FULL,
-                link_register.clone(),
-                jmp_register.clone(),
-                payload_indexer_register.clone(),
+                *link_register,
+                *jmp_register,
+                *payload_indexer_register,
             ],
             &mut self.rng,
         );
@@ -196,29 +193,6 @@ fn emit_mov_al_mem(base_id: u8) -> Vec<u8> {
     }
     out.push(0x8a);
     out.extend(modrm_mem(0, base_id));
-    out
-}
-
-/// `xor BYTE [base], al`
-fn emit_xor_mem_al(base_id: u8) -> Vec<u8> {
-    let mut out = Vec::new();
-    if base_id >= 8 {
-        out.push(0x41); // REX.B
-    }
-    out.push(0x30);
-    out.extend(modrm_mem(0, base_id));
-    out
-}
-
-/// `cmp WORD [base], imm16`
-fn emit_cmp_word_mem_imm16(base_id: u8, imm: u16) -> Vec<u8> {
-    let mut out = vec![0x66]; // operand-size prefix
-    if base_id >= 8 {
-        out.push(0x41); // REX.B
-    }
-    out.push(0x81);
-    out.extend(modrm_mem(7, base_id));
-    out.extend_from_slice(&imm.to_le_bytes());
     out
 }
 

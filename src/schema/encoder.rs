@@ -16,8 +16,6 @@
 
 use std::fmt;
 
-use dynasmrt::DynasmApi;
-
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use rand::{
     distr::{Distribution, StandardUniform},
@@ -26,7 +24,6 @@ use rand::{
 };
 use thiserror::Error;
 
-use crate::core::encoder::AsmInit;
 use crate::obfuscation::aarch64::AArch64CodeAssembler;
 use crate::obfuscation::x32::X32CodeAssembler;
 use crate::{
@@ -67,7 +64,7 @@ pub trait SchemaDecoderStub {
     fn add_schema_decoder(
         &mut self,
         payload: Vec<u8>,
-        schema: &Vec<Operation>,
+        schema: &[Operation],
     ) -> Result<Vec<u8>, SchemaEncoderError>;
 }
 
@@ -155,10 +152,7 @@ where
     }
 }
 
-pub(crate) fn new_cipher_schema(
-    size: usize,
-    rng: &mut dyn rand::rand_core::RngCore,
-) -> Vec<Operation> {
+pub(crate) fn new_cipher_schema(size: usize, rng: &mut dyn rand::Rng) -> Vec<Operation> {
     let mut schema = Vec::with_capacity(size);
 
     for _ in 0..size {

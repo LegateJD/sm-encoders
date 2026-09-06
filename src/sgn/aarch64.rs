@@ -33,26 +33,24 @@ impl<RngType: Rng> SgnDecoderStub for AArch64CodeAssembler<RngType> {
     ) -> Result<Vec<u8>, ShikataGaNaiError> {
         let assembler = VecAssembler::<Aarch64Relocation>::new(0);
         let indexer_register = get_random_general_purpose_register(&mut self.rng);
-        let seed_register =
-            get_safe_random_general_purpose_register(&[indexer_register.clone()], &mut self.rng);
+        let seed_register = get_safe_random_general_purpose_register(
+            std::slice::from_ref(indexer_register),
+            &mut self.rng,
+        );
         let payload_register = get_safe_random_general_purpose_register(
-            &[indexer_register.clone(), seed_register.clone()],
+            &[*indexer_register, *seed_register],
             &mut self.rng,
         );
         let xor_result_register = get_safe_random_general_purpose_register(
-            &[
-                indexer_register.clone(),
-                seed_register.clone(),
-                payload_register.clone(),
-            ],
+            &[*indexer_register, *seed_register, *payload_register],
             &mut self.rng,
         );
         let add_result_register = get_safe_random_general_purpose_register(
             &[
-                indexer_register.clone(),
-                seed_register.clone(),
-                payload_register.clone(),
-                xor_result_register.clone(),
+                *indexer_register,
+                *seed_register,
+                *payload_register,
+                *xor_result_register,
             ],
             &mut self.rng,
         );

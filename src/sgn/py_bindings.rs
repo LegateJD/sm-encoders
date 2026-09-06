@@ -29,7 +29,7 @@ use crate::sgn::encoder::{SgnEncoderX64ChaCha, SgnEncoderX64ThreadRng, ShikataGa
 
 #[cfg(feature = "python")]
 enum SgnEncoderX64Inner {
-    ChaCha(SgnEncoderX64ChaCha),
+    ChaCha(Box<SgnEncoderX64ChaCha>),
     Thread(SgnEncoderX64ThreadRng),
 }
 
@@ -74,14 +74,14 @@ impl SgnEncoderX64 {
         let badchars: HashSet<u8> = badchars.into_iter().collect();
 
         let encoder = match rng {
-            "chacha" => SgnEncoderX64Inner::ChaCha(
+            "chacha" => SgnEncoderX64Inner::ChaCha(Box::new(
                 SgnEncoderX64ChaCha::builder()
                     .set_plain_decoder(plain_decoder)
                     .set_encoding_count(encoding_count)
                     .set_save_registers(save_registers)
                     .set_badchars(badchars)
                     .build_with_rng_seed(seed),
-            ),
+            )),
             "thread" => SgnEncoderX64Inner::Thread(
                 SgnEncoderX64ThreadRng::builder()
                     .set_plain_decoder(plain_decoder)

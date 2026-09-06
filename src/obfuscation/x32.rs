@@ -30,7 +30,7 @@ pub struct X32CodeAssembler<RngType: Rng> {
 impl AsmInit for X32CodeAssembler<ThreadRng> {
     fn new() -> Self {
         let rng = rand::rng();
-        X32CodeAssembler { rng: rng }
+        X32CodeAssembler { rng }
     }
 }
 
@@ -72,9 +72,9 @@ impl<RngType: Rng> GarbageInstructions for X32CodeAssembler<RngType> {
             let mut jmp_garbage = self.generate_garbage_jump();
 
             if self.rng.coin_flip() {
-                garbage_bin.extend(jmp_garbage.into_iter());
+                garbage_bin.extend(jmp_garbage);
             } else {
-                jmp_garbage.extend(garbage_bin.into_iter());
+                jmp_garbage.extend(garbage_bin);
                 garbage_bin = jmp_garbage;
             }
         }

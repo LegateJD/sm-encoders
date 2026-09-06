@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-use crate::core::encoder::{AsmInit, AsmInitWithSeed, Encoder};
+use crate::core::encoder::Encoder;
 use crate::pipeline::parser::{Architecture, PipelineConfig, RngAlgorithm, StageConfig, StageType};
 use crate::sgn::encoder::{SgnEncoderX64ChaCha, SgnEncoderX64ThreadRng};
 use crate::xor_dynamic::encoder::{XorDynamicEncoderX64ChaCha, XorDynamicEncoderX64Thread};

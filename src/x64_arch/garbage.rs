@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
+// dynasm's register macros (Rq/Rd/Rb/...) expand to a no-op `.into()` when the id is already `u8`.
+#![allow(clippy::useless_conversion)]
+
 use dynasmrt::{dynasm, x64::X64Relocation, DynasmApi, DynasmLabelApi, VecAssembler};
 use rand::{seq::IndexedRandom, Rng, RngExt};
 
 use crate::{utils::rng::RngCoinFlip, x64_arch::registers::get_random_general_purpose_register};
-
-trait SuperRng: Rng + RngCoinFlip {}
 
 pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut dyn Rng); 66] = [
     |assembler, _rng| {
@@ -978,17 +979,13 @@ pub const CONDITIONAL_JUMP_MNEMONICS: [fn(&mut VecAssembler<X64Relocation>, &mut
 pub fn generate_garbage_x64_assembly<T: Rng>(rng: &mut T) -> Vec<u8> {
     let mut assembler = VecAssembler::<X64Relocation>::new(0);
     get_random_safe_assembly(&mut assembler, rng);
-    let result = assembler.finalize().unwrap();
-
-    result
+    assembler.finalize().unwrap()
 }
 
 pub fn generate_garbage_x32_assembly<T: Rng>(rng: &mut T) -> Vec<u8> {
     let mut assembler = VecAssembler::<X64Relocation>::new(0);
     get_random_safe_assembly(&mut assembler, rng);
-    let result = assembler.finalize().unwrap();
-
-    result
+    assembler.finalize().unwrap()
 }
 
 fn get_random_safe_assembly(assembler: &mut VecAssembler<X64Relocation>, rng: &mut dyn Rng) {

@@ -246,10 +246,10 @@ pub fn get_save_random_general_purpose_register<T: Rng>(
     let mut filtered = vec![];
 
     for reg in GENERAL_PURPOSE_REGISTERS_64_BIT.iter() {
-        if !excludes.contains(&reg)
-            && !excludes.contains(&reg)
-            && !excludes.contains(&reg)
-            && !excludes.contains(&reg)
+        if !excludes.contains(reg)
+            && !excludes.contains(reg)
+            && !excludes.contains(reg)
+            && !excludes.contains(reg)
         {
             filtered.push(reg);
         }
@@ -257,7 +257,7 @@ pub fn get_save_random_general_purpose_register<T: Rng>(
 
     let register = filtered.choose(rng).unwrap();
 
-    *register
+    register
 }
 
 pub fn get_random_general_purpose_register<T: Rng + ?Sized>(rng: &mut T) -> &'static AsmRegister {

@@ -64,19 +64,19 @@ pub trait SgnDecoderStub {
 }
 
 impl<RngType: Rng> RngSource for X64CodeAssembler<RngType> {
-    fn rng(&mut self) -> &mut dyn rand::rand_core::RngCore {
+    fn rng(&mut self) -> &mut dyn rand::Rng {
         &mut self.rng
     }
 }
 
 impl<RngType: Rng> RngSource for X32CodeAssembler<RngType> {
-    fn rng(&mut self) -> &mut dyn rand::rand_core::RngCore {
+    fn rng(&mut self) -> &mut dyn rand::Rng {
         &mut self.rng
     }
 }
 
 impl<RngType: Rng> RngSource for AArch64CodeAssembler<RngType> {
-    fn rng(&mut self) -> &mut dyn rand::rand_core::RngCore {
+    fn rng(&mut self) -> &mut dyn rand::Rng {
         &mut self.rng
     }
 }

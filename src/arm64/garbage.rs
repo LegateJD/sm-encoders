@@ -17,6 +17,8 @@
 use dynasmrt::{aarch64::Aarch64Relocation, dynasm, VecAssembler};
 use rand::Rng;
 
+// Not yet wired into an aarch64 garbage-instruction generator.
+#[allow(dead_code)]
 pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>, &mut dyn Rng); 5] = [
     |assembler, _rng| {
         dynasm!(assembler

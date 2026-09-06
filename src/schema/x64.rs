@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+// dynasm's register macros (Rq/Rd/Rb/...) expand to a no-op `.into()` when the id is already `u8`.
+#![allow(clippy::useless_conversion)]
+
 use crate::{
     obfuscation::{
         common::{CallOver, GarbageInstructions},
@@ -30,18 +33,18 @@ impl<RngType: Rng> SchemaDecoderStub for X64CodeAssembler<RngType> {
     fn add_schema_decoder(
         &mut self,
         mut payload: Vec<u8>,
-        schema: &Vec<Operation>,
+        schema: &[Operation],
     ) -> Result<Vec<u8>, SchemaEncoderError> {
         let mut assembler = VecAssembler::<X64Relocation>::new(0);
 
         let mut garbage = self.generate_garbage_instructions();
         let mut index = garbage.len() as i32;
-        garbage.extend(payload.into_iter());
+        garbage.extend(payload);
         payload = garbage;
 
         payload = self.add_call_over(payload);
         garbage = self.generate_garbage_instructions();
-        payload.extend(garbage.into_iter());
+        payload.extend(garbage);
 
         let reg = get_save_random_general_purpose_register(&[RSP_FULL, RBP_FULL], &mut self.rng);
         let indexer_register_id = reg.quad as u8;
@@ -49,11 +52,11 @@ impl<RngType: Rng> SchemaDecoderStub for X64CodeAssembler<RngType> {
             ; pop Rq(indexer_register_id)
         );
         let pop = assembler.finalize()?;
-        payload.extend(pop.into_iter());
+        payload.extend(pop);
 
         for operation in schema {
             garbage = self.generate_garbage_instructions();
-            payload.extend(garbage.into_iter());
+            payload.extend(garbage);
             assembler = VecAssembler::<X64Relocation>::new(0);
 
             match operation.key {
@@ -93,7 +96,7 @@ impl<RngType: Rng> SchemaDecoderStub for X64CodeAssembler<RngType> {
             };
 
             let decipher_step = assembler.finalize()?;
-            payload.extend(decipher_step.into_iter());
+            payload.extend(decipher_step);
 
             index += 4;
         }
@@ -104,7 +107,7 @@ impl<RngType: Rng> SchemaDecoderStub for X64CodeAssembler<RngType> {
         );
 
         let return_instruction = assembler.finalize()?;
-        payload.extend(return_instruction.into_iter());
+        payload.extend(return_instruction);
 
         Ok(payload)
     }

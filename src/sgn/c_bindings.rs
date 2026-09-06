@@ -47,7 +47,7 @@ pub unsafe extern "C" fn sgn_encoder_x64_chacha_new(
         let badchars: std::collections::HashSet<u8> = badchars_slice.iter().copied().collect();
         encoder_builder = encoder_builder.set_badchars(badchars);
     }
-    let encoder = Box::new(encoder_builder.build_with_rng_seed(seed as u64));
+    let encoder = Box::new(encoder_builder.build_with_rng_seed(seed));
     Box::into_raw(encoder)
 }
 

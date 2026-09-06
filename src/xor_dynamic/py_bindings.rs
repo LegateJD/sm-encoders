@@ -25,7 +25,7 @@ use crate::xor_dynamic::encoder::{
 };
 
 enum XorDynamicEncoderX64Inner {
-    ChaCha(XorDynamicEncoderX64ChaCha),
+    ChaCha(Box<XorDynamicEncoderX64ChaCha>),
     Thread(XorDynamicEncoderX64Thread),
 }
 
@@ -67,14 +67,14 @@ impl XorDynamicEncoderX64 {
         let badchars: HashSet<u8> = badchars.into_iter().collect();
 
         let encoder = match rng {
-            "chacha" => XorDynamicEncoderX64Inner::ChaCha(
+            "chacha" => XorDynamicEncoderX64Inner::ChaCha(Box::new(
                 XorDynamicEncoderX64ChaCha::builder()
                     .set_plain_decoder(plain_decoder)
                     .set_encoding_count(encoding_count)
                     .set_save_registers(save_registers)
                     .set_badchars(badchars)
                     .build_with_rng_seed(seed),
-            ),
+            )),
             "thread" => XorDynamicEncoderX64Inner::Thread(
                 XorDynamicEncoderX64Thread::builder()
                     .set_plain_decoder(plain_decoder)

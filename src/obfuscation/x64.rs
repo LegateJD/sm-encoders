@@ -34,14 +34,14 @@ pub struct X64CodeAssembler<RngType: Rng> {
 impl AsmInit for X64CodeAssembler<ThreadRng> {
     fn new() -> Self {
         let rng = rand::rng();
-        X64CodeAssembler { rng: rng }
+        X64CodeAssembler { rng }
     }
 }
 
 impl AsmInitWithSeed for X64CodeAssembler<ChaCha20Rng> {
     fn new_with_rng(seed: u64) -> Self {
         let rng = ChaCha20Rng::seed_from_u64(seed);
-        X64CodeAssembler { rng: rng }
+        X64CodeAssembler { rng }
     }
 }
 
@@ -83,9 +83,9 @@ impl<RngType: Rng> GarbageInstructions for X64CodeAssembler<RngType> {
             let mut jmp_garbage = self.generate_garbage_jump();
 
             if self.rng.coin_flip() {
-                garbage_bin.extend(jmp_garbage.into_iter());
+                garbage_bin.extend(jmp_garbage);
             } else {
-                jmp_garbage.extend(garbage_bin.into_iter());
+                jmp_garbage.extend(garbage_bin);
                 garbage_bin = jmp_garbage;
             }
         }

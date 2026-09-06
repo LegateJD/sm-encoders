@@ -41,5 +41,5 @@ pub trait AsmInitWithSeed {
 }
 
 pub trait RngSource {
-    fn rng(&mut self) -> &mut dyn rand::rand_core::RngCore;
+    fn rng(&mut self) -> &mut dyn rand::Rng;
 }

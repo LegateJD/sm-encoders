@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+// dynasm's register macros (Rq/Rd/Rb/...) expand to a no-op `.into()` when the id is already `u8`.
+#![allow(clippy::useless_conversion)]
+
 use crate::{
     obfuscation::x64::X64CodeAssembler,
     sgn::encoder::{SgnDecoderStub, ShikataGaNaiError},
@@ -34,7 +37,7 @@ impl<RngType: Rng> SgnDecoderStub for X64CodeAssembler<RngType> {
             &mut self.rng,
         );
         let seed_register = get_save_random_general_purpose_register(
-            &[RCX_FULL, RBP_FULL, RSP_FULL, indexer_register.clone()],
+            &[RCX_FULL, RBP_FULL, RSP_FULL, *indexer_register],
             &mut self.rng,
         );
         let indexer_register_id = indexer_register.quad as u8;

@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+// dynasm's register macros (Rq/Rd/Rb/...) expand to a no-op `.into()` when the id is already `u8`.
+#![allow(clippy::useless_conversion)]
+
 use std::collections::HashSet;
 
 use dynasmrt::{dynasm, x86::X86Relocation, DynasmApi, DynasmLabelApi, VecAssembler};
@@ -38,19 +41,13 @@ impl<RngType: Rng> XorDynamicStub for X32CodeAssembler<RngType> {
         let link_register_id = link_register.quad as u8;
 
         let jmp_register = get_save_random_general_purpose_register(
-            &[RBP_FULL, RSP_FULL, link_register.clone()],
+            &[RBP_FULL, RSP_FULL, *link_register],
             &mut self.rng,
         );
         let jmp_register_id = jmp_register.quad as u8;
 
         let payload_indexer_register = get_save_random_general_purpose_register(
-            &[
-                RCX_FULL,
-                RBP_FULL,
-                RSP_FULL,
-                link_register.clone(),
-                jmp_register.clone(),
-            ],
+            &[RCX_FULL, RBP_FULL, RSP_FULL, *link_register, *jmp_register],
             &mut self.rng,
         );
         let payload_indexer_register_id = payload_indexer_register.quad as u8;
@@ -60,9 +57,9 @@ impl<RngType: Rng> XorDynamicStub for X32CodeAssembler<RngType> {
                 RCX_FULL,
                 RBP_FULL,
                 RSP_FULL,
-                link_register.clone(),
-                jmp_register.clone(),
-                payload_indexer_register.clone(),
+                *link_register,
+                *jmp_register,
+                *payload_indexer_register,
             ],
             &mut self.rng,
         );
