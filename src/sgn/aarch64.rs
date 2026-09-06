@@ -56,23 +56,23 @@ impl<RngType: Rng> SgnDecoderStub for AArch64CodeAssembler<RngType> {
         );
         let _indexer_register_id = indexer_register.x as u32;
         let _seed_register_id = seed_register.x as u32;
-        let _payload_siez_register_id = payload_register.x as u32;
-        let _xor_result_register_register_id = xor_result_register.x as u32;
-        let _add_result_register_register_id = add_result_register.x as u32;
+        let _payload_size_register_id = payload_register.x as u32;
+        let _xor_result_register_id = xor_result_register.x as u32;
+        let _add_result_register_id = add_result_register.x as u32;
 
         /*dynasm!(assembler
             ; .arch aarch64
             ; mov W(seed_register_id), seed as u32
-            ; mov X(payload_siez_register_id), payload_size as u64
+            ; mov X(payload_size_register_id), payload_size as u64
             ; adr X(indexer_register_id), >_data_sub1
             ; eor W(xor_result_register_register_id), W(xor_result_register_register_id), W(seed_register_id)
-            ; strb W(xor_result_register_register_id), [X(indexer_register_id), X(payload_siez_register_id)]
-            ; ldrb W(add_result_register_register_id), [X(indexer_register_id), X(payload_siez_register_id)]
+            ; strb W(xor_result_register_id), [X(indexer_register_id), X(payload_size_register_id)]
+            ; ldrb W(add_result_register_id), [X(indexer_register_id), X(payload_size_register_id)]
             ; add W(seed_register_id), W(seed_register_id), W(add_result_register_register_id)
-            ; subs X(payload_siez_register_id), XSP(payload_siez_register_id), 1
+            ; subs X(payload_size_register_id), XSP(payload_size_register_id), 1
             ; b.ne >_decode
             ; _decode:
-            ; ldrb W(xor_result_register_register_id), [X(indexer_register_id), X(payload_siez_register_id)]
+            ; ldrb W(xor_result_register_id), [X(indexer_register_id), X(payload_size_register_id)]
             ; _data_sub1:
         );
 
