@@ -1,2 +1,2 @@
-pub mod registers;
 mod garbage;
+pub mod registers;

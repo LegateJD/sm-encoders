@@ -20,16 +20,23 @@ use dynasmrt::DynasmApi;
 
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use rand::{
-    Rng, RngExt, distr::{Distribution, StandardUniform}, rngs::{ChaCha12Rng, ChaCha20Rng, ThreadRng}
+    distr::{Distribution, StandardUniform},
+    rngs::{ChaCha12Rng, ChaCha20Rng, ThreadRng},
+    Rng, RngExt,
 };
 use thiserror::Error;
 
-use crate::{
-    core::encoder::{AsmInitWithSeed, Encoder}, obfuscation::{common::{CallOver, GarbageInstructions, GarbageJump}, x64::X64CodeAssembler}, sgn::encoder::SgnDecoderStub
-};
 use crate::core::encoder::AsmInit;
 use crate::obfuscation::aarch64::AArch64CodeAssembler;
 use crate::obfuscation::x32::X32CodeAssembler;
+use crate::{
+    core::encoder::{AsmInitWithSeed, Encoder},
+    obfuscation::{
+        common::{CallOver, GarbageInstructions, GarbageJump},
+        x64::X64CodeAssembler,
+    },
+    sgn::encoder::SgnDecoderStub,
+};
 
 pub type SchemaEncoderX64 = SchemaEncoder<X64CodeAssembler<ChaCha12Rng>>;
 pub type SchemaEncoderX64ChaCha = SchemaEncoder<X64CodeAssembler<ChaCha20Rng>>;
@@ -42,7 +49,7 @@ pub type SchemaEncoderAArch64 = SchemaEncoder<AArch64CodeAssembler<ChaCha12Rng>>
 #[derive(Error, Debug)]
 pub enum SchemaEncoderError {
     #[error("AssemblerError")]
-    AssemblerError
+    AssemblerError,
 }
 
 pub struct SchemaEncoder<
@@ -76,9 +83,9 @@ pub enum SchemaInstruction {
 
 impl<AsmType> SchemaEncoder<AsmType>
 where
-    AsmType: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + SchemaDecoderStub
+    AsmType: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + SchemaDecoderStub,
 {
-    pub fn new(_seed: u8) -> SchemaEncoder<AsmType> 
+    pub fn new(_seed: u8) -> SchemaEncoder<AsmType>
     where
         AsmType: crate::core::encoder::AsmInit,
     {
@@ -124,7 +131,12 @@ impl Distribution<SchemaInstruction> for StandardUniform {
 
 impl<AsmType> Encoder for SchemaEncoder<AsmType>
 where
-    AsmType: GarbageJump + CallOver + SgnDecoderStub + GarbageInstructions + SchemaDecoderStub + crate::core::encoder::RngSource,
+    AsmType: GarbageJump
+        + CallOver
+        + SgnDecoderStub
+        + GarbageInstructions
+        + SchemaDecoderStub
+        + crate::core::encoder::RngSource,
 {
     type Error = SchemaEncoderError;
 
@@ -143,7 +155,10 @@ where
     }
 }
 
-pub(crate) fn new_cipher_schema(size: usize, rng: &mut dyn rand::rand_core::RngCore) -> Vec<Operation> {
+pub(crate) fn new_cipher_schema(
+    size: usize,
+    rng: &mut dyn rand::rand_core::RngCore,
+) -> Vec<Operation> {
     let mut schema = Vec::with_capacity(size);
 
     for _ in 0..size {
@@ -172,11 +187,13 @@ pub(crate) fn schema_cipher(mut payload: Vec<u8>, schema: &Vec<Operation>) -> Ve
                 BigEndian::write_u32(&mut payload[index..index + 4], encoded)
             }
             SchemaInstruction::ADD => {
-                let encoded = LittleEndian::read_u32(&payload[index..index + 4]).wrapping_sub(BigEndian::read_u32(&operation.key.unwrap()));
+                let encoded = LittleEndian::read_u32(&payload[index..index + 4])
+                    .wrapping_sub(BigEndian::read_u32(&operation.key.unwrap()));
                 LittleEndian::write_u32(&mut payload[index..index + 4], encoded)
             }
             SchemaInstruction::SUB => {
-                let encoded = LittleEndian::read_u32(&payload[index..index + 4]).wrapping_add(BigEndian::read_u32(&operation.key.unwrap()));
+                let encoded = LittleEndian::read_u32(&payload[index..index + 4])
+                    .wrapping_add(BigEndian::read_u32(&operation.key.unwrap()));
                 LittleEndian::write_u32(&mut payload[index..index + 4], encoded)
             }
             SchemaInstruction::ROL => {

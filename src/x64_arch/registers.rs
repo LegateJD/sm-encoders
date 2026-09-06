@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-use rand::{Rng, seq::IndexedRandom};
+use rand::{seq::IndexedRandom, Rng};
 
 #[derive(Debug, Clone, Copy)]
 pub struct AsmRegister {
@@ -239,7 +239,10 @@ pub const GENERAL_PURPOSE_REGISTERS_64_BIT: &[AsmRegister] = &[
     R9_FULL, R10_FULL, R11_FULL, R12_FULL, R13_FULL, R14_FULL, R15_FULL,
 ];
 
-pub fn get_save_random_general_purpose_register<T: Rng>(excludes: &[AsmRegister], rng: &mut T) -> &'static AsmRegister {
+pub fn get_save_random_general_purpose_register<T: Rng>(
+    excludes: &[AsmRegister],
+    rng: &mut T,
+) -> &'static AsmRegister {
     let mut filtered = vec![];
 
     for reg in GENERAL_PURPOSE_REGISTERS_64_BIT.iter() {

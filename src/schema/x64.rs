@@ -14,10 +14,17 @@
  * limitations under the License.
  */
 
+use crate::{
+    obfuscation::{
+        common::{CallOver, GarbageInstructions},
+        x64::X64CodeAssembler,
+    },
+    schema::encoder::{Operation, SchemaDecoderStub, SchemaEncoderError, SchemaInstruction},
+    x64_arch::registers::{get_save_random_general_purpose_register, RBP_FULL, RSP_FULL},
+};
 use byteorder::{BigEndian, ByteOrder};
 use dynasmrt::{dynasm, x64::X64Relocation, DynasmApi, DynasmError, VecAssembler};
 use rand::Rng;
-use crate::{obfuscation::{common::{CallOver, GarbageInstructions}, x64::X64CodeAssembler}, schema::encoder::{Operation, SchemaDecoderStub, SchemaEncoderError, SchemaInstruction}, x64_arch::registers::{RBP_FULL, RSP_FULL, get_save_random_general_purpose_register}};
 
 impl<RngType: Rng> SchemaDecoderStub for X64CodeAssembler<RngType> {
     fn add_schema_decoder(
@@ -50,36 +57,34 @@ impl<RngType: Rng> SchemaDecoderStub for X64CodeAssembler<RngType> {
             assembler = VecAssembler::<X64Relocation>::new(0);
 
             match operation.key {
-                Some(k) => {
-                    match operation.instruction {
-                        SchemaInstruction::XOR => {
-                            dynasm!(assembler
-                                ; xor DWORD [Rq(indexer_register_id) + index], BigEndian::read_u32(&k) as i32
-                            );
-                        }
-                        SchemaInstruction::SUB => {
-                            dynasm!(assembler
-                                ; sub DWORD [Rq(indexer_register_id) + index], BigEndian::read_u32(&k) as i32
-                            );
-                        }
-                        SchemaInstruction::ADD => {
-                            dynasm!(assembler
-                                ; add DWORD [Rq(indexer_register_id) + index], BigEndian::read_u32(&k) as i32
-                            );
-                        }
-                        SchemaInstruction::ROL => {
-                            dynasm!(assembler
-                                ; rol DWORD [Rq(indexer_register_id) + index], BigEndian::read_u32(&k) as i8
-                            );
-                        }
-                        SchemaInstruction::ROR => {
-                            dynasm!(assembler
-                                ; ror DWORD [Rq(indexer_register_id) + index], BigEndian::read_u32(&k) as i8
-                            );
-                        }
-                        _ => unreachable!(),
+                Some(k) => match operation.instruction {
+                    SchemaInstruction::XOR => {
+                        dynasm!(assembler
+                            ; xor DWORD [Rq(indexer_register_id) + index], BigEndian::read_u32(&k) as i32
+                        );
                     }
-                }
+                    SchemaInstruction::SUB => {
+                        dynasm!(assembler
+                            ; sub DWORD [Rq(indexer_register_id) + index], BigEndian::read_u32(&k) as i32
+                        );
+                    }
+                    SchemaInstruction::ADD => {
+                        dynasm!(assembler
+                            ; add DWORD [Rq(indexer_register_id) + index], BigEndian::read_u32(&k) as i32
+                        );
+                    }
+                    SchemaInstruction::ROL => {
+                        dynasm!(assembler
+                            ; rol DWORD [Rq(indexer_register_id) + index], BigEndian::read_u32(&k) as i8
+                        );
+                    }
+                    SchemaInstruction::ROR => {
+                        dynasm!(assembler
+                            ; ror DWORD [Rq(indexer_register_id) + index], BigEndian::read_u32(&k) as i8
+                        );
+                    }
+                    _ => unreachable!(),
+                },
                 None => {
                     dynasm!(assembler
                         ; not DWORD [Rq(indexer_register_id) + index]

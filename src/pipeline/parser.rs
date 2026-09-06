@@ -114,16 +114,15 @@ fn default_encoding_count() -> u32 {
 impl PipelineConfig {
     /// Parse pipeline configuration from a YAML file
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, String> {
-        let contents = fs::read_to_string(path)
-            .map_err(|e| format!("Failed to read pipeline file: {}", e))?;
+        let contents =
+            fs::read_to_string(path).map_err(|e| format!("Failed to read pipeline file: {}", e))?;
 
         Self::from_yaml(&contents)
     }
 
     /// Parse pipeline configuration from a YAML string
     pub fn from_yaml(yaml: &str) -> Result<Self, String> {
-        serde_yaml::from_str(yaml)
-            .map_err(|e| format!("Failed to parse YAML: {}", e))
+        serde_yaml::from_str(yaml).map_err(|e| format!("Failed to parse YAML: {}", e))
     }
 
     /// Validate the pipeline configuration
@@ -146,7 +145,7 @@ impl PipelineConfig {
     fn validate_stage(&self, stage: &StageConfig, idx: usize) -> Result<(), String> {
         // Validate stage type
         match stage.stage_type {
-            StageType::Sgn | StageType::XorDynamic => {},
+            StageType::Sgn | StageType::XorDynamic => {}
         }
 
         // Validate SGN-specific parameters

@@ -17,8 +17,13 @@
 use dynasmrt::{aarch64::Aarch64Relocation, VecAssembler};
 use rand::Rng;
 
-use crate::{obfuscation::aarch64::AArch64CodeAssembler, sgn::encoder::{SgnDecoderStub, ShikataGaNaiError}};
-use crate::arm64::registers::{get_random_general_purpose_register, get_safe_random_general_purpose_register};
+use crate::arm64::registers::{
+    get_random_general_purpose_register, get_safe_random_general_purpose_register,
+};
+use crate::{
+    obfuscation::aarch64::AArch64CodeAssembler,
+    sgn::encoder::{SgnDecoderStub, ShikataGaNaiError},
+};
 
 impl<RngType: Rng> SgnDecoderStub for AArch64CodeAssembler<RngType> {
     fn get_sgn_decoder_stub(
@@ -30,12 +35,27 @@ impl<RngType: Rng> SgnDecoderStub for AArch64CodeAssembler<RngType> {
         let indexer_register = get_random_general_purpose_register(&mut self.rng);
         let seed_register =
             get_safe_random_general_purpose_register(&[indexer_register.clone()], &mut self.rng);
-        let payload_register =
-            get_safe_random_general_purpose_register(&[indexer_register.clone(), seed_register.clone()], &mut self.rng);
-        let xor_result_register =
-            get_safe_random_general_purpose_register(&[indexer_register.clone(), seed_register.clone(), payload_register.clone()], &mut self.rng);
-        let add_result_register =
-            get_safe_random_general_purpose_register(&[indexer_register.clone(), seed_register.clone(), payload_register.clone(), xor_result_register.clone()], &mut self.rng);
+        let payload_register = get_safe_random_general_purpose_register(
+            &[indexer_register.clone(), seed_register.clone()],
+            &mut self.rng,
+        );
+        let xor_result_register = get_safe_random_general_purpose_register(
+            &[
+                indexer_register.clone(),
+                seed_register.clone(),
+                payload_register.clone(),
+            ],
+            &mut self.rng,
+        );
+        let add_result_register = get_safe_random_general_purpose_register(
+            &[
+                indexer_register.clone(),
+                seed_register.clone(),
+                payload_register.clone(),
+                xor_result_register.clone(),
+            ],
+            &mut self.rng,
+        );
         let _indexer_register_id = indexer_register.x as u32;
         let _seed_register_id = seed_register.x as u32;
         let _payload_siez_register_id = payload_register.x as u32;

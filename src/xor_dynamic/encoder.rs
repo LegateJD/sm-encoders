@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-use rand::{rngs::{ChaCha20Rng, ThreadRng}, seq::SliceRandom};
+use rand::{
+    rngs::{ChaCha20Rng, ThreadRng},
+    seq::SliceRandom,
+};
 use std::collections::HashSet;
 use thiserror::Error;
 

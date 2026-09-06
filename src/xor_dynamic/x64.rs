@@ -17,23 +17,34 @@
 use std::collections::HashSet;
 
 use crate::{
-    obfuscation::x64::X64CodeAssembler, x64_arch::registers::{RAX_FULL, RBP_FULL, RCX_FULL, RDI_FULL, RSP_FULL, get_save_random_general_purpose_register}, xor_dynamic::encoder::{XorDecoderStub, XorDynamicEncoderError, XorDynamicStub},
+    obfuscation::x64::X64CodeAssembler,
+    x64_arch::registers::{
+        get_save_random_general_purpose_register, RAX_FULL, RBP_FULL, RCX_FULL, RDI_FULL, RSP_FULL,
+    },
+    xor_dynamic::encoder::{XorDecoderStub, XorDynamicEncoderError, XorDynamicStub},
 };
-use dynasmrt::{
-    dynasm,
-    x64::{X64Relocation},
-    DynasmApi, DynasmError, DynasmLabelApi, VecAssembler,
-};
+use dynasmrt::{dynasm, x64::X64Relocation, DynasmApi, DynasmError, DynasmLabelApi, VecAssembler};
 use rand::Rng;
 
 impl<RngType: Rng> XorDynamicStub for X64CodeAssembler<RngType> {
-    fn get_xor_dynamic_decoder_stub(&mut self, _badchars: &HashSet<u8>) -> Result<XorDecoderStub, XorDynamicEncoderError> {
-        let link_register =
-            get_save_random_general_purpose_register(&[RBP_FULL, RSP_FULL, RDI_FULL, RAX_FULL], &mut self.rng);
+    fn get_xor_dynamic_decoder_stub(
+        &mut self,
+        _badchars: &HashSet<u8>,
+    ) -> Result<XorDecoderStub, XorDynamicEncoderError> {
+        let link_register = get_save_random_general_purpose_register(
+            &[RBP_FULL, RSP_FULL, RDI_FULL, RAX_FULL],
+            &mut self.rng,
+        );
         let link_register_id = link_register.quad as u8;
 
         let jmp_register = get_save_random_general_purpose_register(
-            &[RBP_FULL, RSP_FULL, RDI_FULL, RAX_FULL, link_register.clone()],
+            &[
+                RBP_FULL,
+                RSP_FULL,
+                RDI_FULL,
+                RAX_FULL,
+                link_register.clone(),
+            ],
             &mut self.rng,
         );
         let jmp_register_id = jmp_register.quad as u8;

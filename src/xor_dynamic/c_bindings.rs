@@ -49,7 +49,9 @@ pub unsafe extern "C" fn xor_dynamic_encoder_x64_chacha_new(
 /// # Safety
 /// `encoder` must be a pointer previously returned by `xor_dynamic_encoder_x64_chacha_new`, or null.
 #[no_mangle]
-pub unsafe extern "C" fn xor_dynamic_encoder_x64_chacha_free(encoder: *mut XorDynamicEncoderX64ChaCha) {
+pub unsafe extern "C" fn xor_dynamic_encoder_x64_chacha_free(
+    encoder: *mut XorDynamicEncoderX64ChaCha,
+) {
     if !encoder.is_null() {
         unsafe {
             drop(Box::from_raw(encoder));
@@ -120,7 +122,9 @@ pub unsafe extern "C" fn xor_dynamic_encoder_x64_thread_new(
 /// # Safety
 /// `encoder` must be a pointer previously returned by `xor_dynamic_encoder_x64_thread_new`, or null.
 #[no_mangle]
-pub unsafe extern "C" fn xor_dynamic_encoder_x64_thread_free(encoder: *mut XorDynamicEncoderX64Thread) {
+pub unsafe extern "C" fn xor_dynamic_encoder_x64_thread_free(
+    encoder: *mut XorDynamicEncoderX64Thread,
+) {
     if !encoder.is_null() {
         unsafe {
             drop(Box::from_raw(encoder));

@@ -19,13 +19,22 @@ use std::collections::HashSet;
 use dynasmrt::{dynasm, x86::X86Relocation, DynasmApi, DynasmLabelApi, VecAssembler};
 use rand::Rng;
 
-use crate::{obfuscation::x32::X32CodeAssembler, xor_dynamic::encoder::{XorDynamicEncoderError, XorDynamicStub, XorDecoderStub}};
-use crate::x64_arch::registers::{get_save_random_general_purpose_register, RBP_FULL, RCX_FULL, RSP_FULL};
+use crate::x64_arch::registers::{
+    get_save_random_general_purpose_register, RBP_FULL, RCX_FULL, RSP_FULL,
+};
+use crate::{
+    obfuscation::x32::X32CodeAssembler,
+    xor_dynamic::encoder::{XorDecoderStub, XorDynamicEncoderError, XorDynamicStub},
+};
 
 impl<RngType: Rng> XorDynamicStub for X32CodeAssembler<RngType> {
-    fn get_xor_dynamic_decoder_stub(&mut self, _badchars: &HashSet<u8>) -> Result<XorDecoderStub, XorDynamicEncoderError> {
+    fn get_xor_dynamic_decoder_stub(
+        &mut self,
+        _badchars: &HashSet<u8>,
+    ) -> Result<XorDecoderStub, XorDynamicEncoderError> {
         let mut assembler = VecAssembler::<X86Relocation>::new(0);
-        let link_register = get_save_random_general_purpose_register(&[RBP_FULL, RSP_FULL], &mut self.rng);
+        let link_register =
+            get_save_random_general_purpose_register(&[RBP_FULL, RSP_FULL], &mut self.rng);
         let link_register_id = link_register.quad as u8;
 
         let jmp_register = get_save_random_general_purpose_register(

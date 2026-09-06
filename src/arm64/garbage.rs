@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-use dynasmrt::{
-    dynasm, aarch64::Aarch64Relocation, VecAssembler,
-};
-use rand::{Rng};
+use dynasmrt::{aarch64::Aarch64Relocation, dynasm, VecAssembler};
+use rand::Rng;
 
 pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>, &mut dyn Rng); 5] = [
     |assembler, _rng| {
@@ -31,7 +29,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>, &
         assembler.extend(b"\x1f\x42\x1b\xd5");
     },
     |assembler, _rng| {
-
         // mrs x0, nzcv
         // eor x0, x0, #0x20000000
         // msr nzcv, x0
@@ -51,322 +48,320 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<Aarch64Relocation>, &
             ; .arch aarch64
             ; cmp xzr, xzr
         );
-    }
+    }, /*
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-    /* 
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; mov X(register_id), X(register_id)
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let second_register =
+               get_safe_random_general_purpose_register(&[register.clone()], rng);
+           let register_id = register.x as u32;
+           let second_register_id = second_register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; mov X(register_id), X(register_id)
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let second_register =
-            get_safe_random_general_purpose_register(&[register.clone()], rng);
-        let register_id = register.x as u32;
-        let second_register_id = second_register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; mov X(second_register_id), X(register_id)
+               ; mov X(register_id), X(second_register_id)
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; mov X(second_register_id), X(register_id)
-            ; mov X(register_id), X(second_register_id)
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; add XSP(register_id), XSP(register_id), 0
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; add XSP(register_id), XSP(register_id), 0
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; sub XSP(register_id), XSP(register_id), 0
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; sub XSP(register_id), XSP(register_id), 0
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; and X(register_id), X(register_id), X(register_id)
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; and X(register_id), X(register_id), X(register_id)
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; orr X(register_id), X(register_id), X(register_id)
+           );
+       },
+       /*|assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; orr X(register_id), X(register_id), X(register_id)
-        );
-    },
-    /*|assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; eor XSP(register_id), X(register_id), 0
+           );
+       },*/
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; eor XSP(register_id), X(register_id), 0
-        );
-    },*/
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; lsl X(register_id), X(register_id), #0
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; lsl X(register_id), X(register_id), #0
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; lsr X(register_id), X(register_id), 0
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; lsr X(register_id), X(register_id), 0
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; asr X(register_id), X(register_id), 0
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; asr X(register_id), X(register_id), 0
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; ror X(register_id), X(register_id), 0
+           );
+       },
+       |assembler, rng| {
+           let label = assembler.new_dynamic_label();
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; ror X(register_id), X(register_id), 0
-        );
-    },
-    |assembler, rng| {
-        let label = assembler.new_dynamic_label();
+           dynasm!(assembler
+               ; .arch aarch64
+               ; b >label
+               ; =>label
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; b >label
-            ; =>label
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; cmp X(register_id), X(register_id)
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; cmp X(register_id), X(register_id)
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; tst X(register_id), X(register_id)
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; tst X(register_id), X(register_id)
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; csel X(register_id), X(register_id), X(register_id), eq
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; csel X(register_id), X(register_id), X(register_id), eq
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; csel X(register_id), X(register_id), X(register_id), ne
+           );
+       },
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; csel X(register_id), X(register_id), X(register_id), ne
-        );
-    },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; cmn XSP(register_id), 0
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; cmn XSP(register_id), 0
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; mul X(register_id), X(register_id), X(register_id)
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
+           let mut rng = rand::rng();
+           /*let random_byte = rng.random::<u8>();
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; mul X(register_id), X(register_id), X(register_id)
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
-        let mut rng = rand::rng();
-        /*let random_byte = rng.random::<u8>();
+           dynasm!(assembler
+               ; .arch aarch64
+               ; add XSP(register_id), XSP(register_id), random_byte as u32
+               ; sub XSP(register_id), XSP(register_id), random_byte as u32
+           );*/
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; add XSP(register_id), XSP(register_id), random_byte as u32
-            ; sub XSP(register_id), XSP(register_id), random_byte as u32
-        );*/
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; rev X(register_id), X(register_id)
+               ; rev X(register_id), X(register_id)
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; rev X(register_id), X(register_id)
-            ; rev X(register_id), X(register_id)
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; csel X(register_id), X(register_id), X(register_id), hi
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; csel X(register_id), X(register_id), X(register_id), hi
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; csel X(register_id), X(register_id), X(register_id), lo
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; csel X(register_id), X(register_id), X(register_id), lo
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; csel X(register_id), X(register_id), X(register_id), cs
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; csel X(register_id), X(register_id), X(register_id), cs
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; csel X(register_id), X(register_id), X(register_id), gt
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; csel X(register_id), X(register_id), X(register_id), gt
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; csel X(register_id), X(register_id), X(register_id), lt
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; csel X(register_id), X(register_id), X(register_id), lt
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; csel X(register_id), X(register_id), X(register_id), vs
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; csel X(register_id), X(register_id), X(register_id), vs
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; csel X(register_id), X(register_id), X(register_id), mi
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; csel X(register_id), X(register_id), X(register_id), mi
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; csel X(register_id), X(register_id), X(register_id), hs
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; csel X(register_id), X(register_id), X(register_id), hs
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; csel X(register_id), X(register_id), X(register_id), ge
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; csel X(register_id), X(register_id), X(register_id), ge
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; csel X(register_id), X(register_id), X(register_id), le
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; csel X(register_id), X(register_id), X(register_id), le
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; csel X(register_id), X(register_id), X(register_id), ls
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; csel X(register_id), X(register_id), X(register_id), ls
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; csel X(register_id), X(register_id), X(register_id), cc
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; csel X(register_id), X(register_id), X(register_id), cc
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
+           dynasm!(assembler
+               ; .arch aarch64
+               ; csel X(register_id), X(register_id), X(register_id), vc
+           );
+       },
+       |assembler, rng| {
+           let register = get_random_general_purpose_register(rng);
+           let register_id = register.x as u32;
 
-        dynasm!(assembler
-            ; .arch aarch64
-            ; csel X(register_id), X(register_id), X(register_id), vc
-        );
-    },
-    |assembler, rng| {
-        let register = get_random_general_purpose_register(rng);
-        let register_id = register.x as u32;
-
-        dynasm!(assembler
-            ; .arch aarch64
-            ; csel X(register_id), X(register_id), X(register_id), pl
-        );
-    } */
+           dynasm!(assembler
+               ; .arch aarch64
+               ; csel X(register_id), X(register_id), X(register_id), pl
+           );
+       } */
 ];

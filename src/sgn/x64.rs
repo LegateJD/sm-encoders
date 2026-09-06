@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
+use crate::{
+    obfuscation::x64::X64CodeAssembler,
+    sgn::encoder::{SgnDecoderStub, ShikataGaNaiError},
+    x64_arch::registers::{get_save_random_general_purpose_register, RBP_FULL, RCX_FULL, RSP_FULL},
+};
 use dynasmrt::{dynasm, x64::X64Relocation, DynasmApi, DynasmError, DynasmLabelApi, VecAssembler};
 use rand::Rng;
-use crate::{obfuscation::x64::X64CodeAssembler, sgn::encoder::{SgnDecoderStub, ShikataGaNaiError}, x64_arch::registers::{RBP_FULL, RCX_FULL, RSP_FULL, get_save_random_general_purpose_register}};
 
 impl<RngType: Rng> SgnDecoderStub for X64CodeAssembler<RngType> {
     fn get_sgn_decoder_stub(
@@ -25,9 +29,14 @@ impl<RngType: Rng> SgnDecoderStub for X64CodeAssembler<RngType> {
         payload_size: usize,
     ) -> Result<Vec<u8>, ShikataGaNaiError> {
         let mut assembler = VecAssembler::<X64Relocation>::new(0);
-        let indexer_register = get_save_random_general_purpose_register(&[RCX_FULL, RBP_FULL, RSP_FULL], &mut self.rng);
-        let seed_register =
-            get_save_random_general_purpose_register(&[RCX_FULL, RBP_FULL, RSP_FULL, indexer_register.clone()], &mut self.rng);
+        let indexer_register = get_save_random_general_purpose_register(
+            &[RCX_FULL, RBP_FULL, RSP_FULL],
+            &mut self.rng,
+        );
+        let seed_register = get_save_random_general_purpose_register(
+            &[RCX_FULL, RBP_FULL, RSP_FULL, indexer_register.clone()],
+            &mut self.rng,
+        );
         let indexer_register_id = indexer_register.quad as u8;
         let seed_register_id = seed_register.low as u8;
 
@@ -53,4 +62,3 @@ impl From<DynasmError> for ShikataGaNaiError {
         ShikataGaNaiError::AssemblerError
     }
 }
-

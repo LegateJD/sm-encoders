@@ -14,12 +14,17 @@
  * limitations under the License.
  */
 
-use rand::{ Rng, rngs::ThreadRng};
+use rand::{rngs::ThreadRng, Rng};
 
-use crate::{core::encoder::AsmInit, obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump}, utils::rng::RngCoinFlip, x64_arch::garbage::generate_garbage_x32_assembly};
+use crate::{
+    core::encoder::AsmInit,
+    obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump},
+    utils::rng::RngCoinFlip,
+    x64_arch::garbage::generate_garbage_x32_assembly,
+};
 
 pub struct X32CodeAssembler<RngType: Rng> {
-    pub rng: RngType
+    pub rng: RngType,
 }
 
 impl AsmInit for X32CodeAssembler<ThreadRng> {

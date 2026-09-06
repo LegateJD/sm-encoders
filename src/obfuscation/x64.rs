@@ -14,15 +14,21 @@
  * limitations under the License.
  */
 
-use rand::{Rng, SeedableRng, rngs::{ChaCha20Rng, ThreadRng}};
-
-use crate::{
-    core::encoder::{AsmInit, AsmInitWithSeed}, obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump}, utils::rng::RngCoinFlip, x64_arch::garbage::generate_garbage_x64_assembly
+use rand::{
+    rngs::{ChaCha20Rng, ThreadRng},
+    Rng, SeedableRng,
 };
+
 use crate::obfuscation::common::AsmSaveRegisters;
+use crate::{
+    core::encoder::{AsmInit, AsmInitWithSeed},
+    obfuscation::common::{CallOver, GarbageAssembly, GarbageInstructions, GarbageJump},
+    utils::rng::RngCoinFlip,
+    x64_arch::garbage::generate_garbage_x64_assembly,
+};
 
 pub struct X64CodeAssembler<RngType: Rng> {
-    pub rng: RngType
+    pub rng: RngType,
 }
 
 impl AsmInit for X64CodeAssembler<ThreadRng> {
@@ -96,20 +102,24 @@ impl<RngType: Rng> GarbageAssembly for X64CodeAssembler<RngType> {
 
 impl<RngType: Rng> AsmSaveRegisters for X64CodeAssembler<RngType> {
     fn get_save_registers_suffix(&self) -> Vec<u8> {
-        vec![0x41, 0x5f, 0x41, 0x5e, // POP R15,R14
-             0x41, 0x5d, 0x41, 0x5c, // POP R13,R12
-             0x41, 0x5b, 0x41, 0x5a, // POP R11,R10
-             0x41, 0x59, 0x41, 0x58, // POP R9,R8
-             0x5c, 0x5d, 0x5f, 0x5e, // POP RSP,RBP,RDI,RSI
-             0x5a, 0x59, 0x5b, 0x58] // POP RDX,RCX,RBX,RAX
+        vec![
+            0x41, 0x5f, 0x41, 0x5e, // POP R15,R14
+            0x41, 0x5d, 0x41, 0x5c, // POP R13,R12
+            0x41, 0x5b, 0x41, 0x5a, // POP R11,R10
+            0x41, 0x59, 0x41, 0x58, // POP R9,R8
+            0x5c, 0x5d, 0x5f, 0x5e, // POP RSP,RBP,RDI,RSI
+            0x5a, 0x59, 0x5b, 0x58,
+        ] // POP RDX,RCX,RBX,RAX
     }
 
     fn get_save_registers_prefix(&self) -> Vec<u8> {
-        vec![0x50, 0x53, 0x51, 0x52, // PUSH RAX,RBX,RCX,RDX
-             0x56, 0x57, 0x55, 0x54, // PUSH RSI,RDI,RBP,RSP
-             0x41, 0x50, 0x41, 0x51, // PUSH R8,R9
-             0x41, 0x52, 0x41, 0x53, // PUSH R10,R11
-             0x41, 0x54, 0x41, 0x55, // PUSH R12,R13
-             0x41, 0x56, 0x41, 0x57] // PUSH R14,R15
+        vec![
+            0x50, 0x53, 0x51, 0x52, // PUSH RAX,RBX,RCX,RDX
+            0x56, 0x57, 0x55, 0x54, // PUSH RSI,RDI,RBP,RSP
+            0x41, 0x50, 0x41, 0x51, // PUSH R8,R9
+            0x41, 0x52, 0x41, 0x53, // PUSH R10,R11
+            0x41, 0x54, 0x41, 0x55, // PUSH R12,R13
+            0x41, 0x56, 0x41, 0x57,
+        ] // PUSH R14,R15
     }
 }

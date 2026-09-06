@@ -9,4 +9,3 @@
  */
 pub mod encode;
 pub mod parser;
-

@@ -16,7 +16,6 @@
 
 use std::error::Error;
 
-
 pub trait Encoder {
     type Error: Sized + Error;
 
@@ -44,4 +43,3 @@ pub trait AsmInitWithSeed {
 pub trait RngSource {
     fn rng(&mut self) -> &mut dyn rand::rand_core::RngCore;
 }
-

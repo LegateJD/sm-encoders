@@ -97,7 +97,7 @@ enum EncoderType {
 pub enum RngAlgorithm {
     ChaCha,
     #[default]
-    Thread
+    Thread,
 }
 
 fn main() {
@@ -127,10 +127,7 @@ fn encode() -> Result<(), String> {
             .ok_or("Either --encoder-type or --pipeline must be specified")?;
 
         let seed: u64 = args.seed.unwrap_or_else(|| rand::rng().random());
-        println!(
-            "Using single encoder mode with asm_seed: 0x{:016X}",
-            seed
-        );
+        println!("Using single encoder mode with asm_seed: 0x{:016X}", seed);
 
         match (encoder_type, args.rng) {
             (EncoderType::ShikataGaNai, RngAlgorithm::ChaCha) => {

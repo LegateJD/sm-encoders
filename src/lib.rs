@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+pub mod arm64;
 pub mod core;
 pub mod obfuscation;
 pub mod pipeline;
@@ -22,7 +23,6 @@ pub mod sgn;
 pub mod utils;
 pub mod x64_arch;
 pub mod xor_dynamic;
-pub mod arm64;
 pub use sgn::c_bindings::*;
 pub use xor_dynamic::c_bindings::*;
 

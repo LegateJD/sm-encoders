@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-use dynasmrt::{
-    dynasm, x64::X64Relocation, DynasmApi,
-    DynasmLabelApi, VecAssembler,
-};
-use rand::{Rng, RngExt, seq::IndexedRandom};
+use dynasmrt::{dynasm, x64::X64Relocation, DynasmApi, DynasmLabelApi, VecAssembler};
+use rand::{seq::IndexedRandom, Rng, RngExt};
 
-use crate::{
-    utils::{rng::RngCoinFlip}, x64_arch::registers::get_random_general_purpose_register,
-};
+use crate::{utils::rng::RngCoinFlip, x64_arch::registers::get_random_general_purpose_register};
 
 trait SuperRng: Rng + RngCoinFlip {}
-
 
 pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut dyn Rng); 66] = [
     |assembler, _rng| {
@@ -34,7 +28,6 @@ pub const SAFE_GARBAGE_INSTRUCTIONS: [fn(&mut VecAssembler<X64Relocation>, &mut 
         );
     },
     |assembler, _rng| {
-
         dynasm!(assembler
             ; cld
         );

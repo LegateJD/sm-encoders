@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-use rand::{Rng, seq::IndexedRandom};
+use rand::{seq::IndexedRandom, Rng};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Arm64Register {
-    pub x: XRegister,    // 64-bit register
-    pub w: WRegister,    // 32-bit register
+    pub x: XRegister, // 64-bit register
+    pub w: WRegister, // 32-bit register
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
@@ -98,61 +98,156 @@ impl PartialEq for Arm64Register {
     }
 }
 
-pub const X0_FULL: Arm64Register = Arm64Register { x: XRegister::X0, w: WRegister::W0 };
-pub const X1_FULL: Arm64Register = Arm64Register { x: XRegister::X1, w: WRegister::W1 };
-pub const X2_FULL: Arm64Register = Arm64Register { x: XRegister::X2, w: WRegister::W2 };
-pub const X3_FULL: Arm64Register = Arm64Register { x: XRegister::X3, w: WRegister::W3 };
-pub const X4_FULL: Arm64Register = Arm64Register { x: XRegister::X4, w: WRegister::W4 };
-pub const X5_FULL: Arm64Register = Arm64Register { x: XRegister::X5, w: WRegister::W5 };
-pub const X6_FULL: Arm64Register = Arm64Register { x: XRegister::X6, w: WRegister::W6 };
-pub const X7_FULL: Arm64Register = Arm64Register { x: XRegister::X7, w: WRegister::W7 };
-pub const X8_FULL: Arm64Register = Arm64Register { x: XRegister::X8, w: WRegister::W8 };
-pub const X9_FULL: Arm64Register = Arm64Register { x: XRegister::X9, w: WRegister::W9 };
-pub const X10_FULL: Arm64Register = Arm64Register { x: XRegister::X10, w: WRegister::W10 };
-pub const X11_FULL: Arm64Register = Arm64Register { x: XRegister::X11, w: WRegister::W11 };
-pub const X12_FULL: Arm64Register = Arm64Register { x: XRegister::X12, w: WRegister::W12 };
-pub const X13_FULL: Arm64Register = Arm64Register { x: XRegister::X13, w: WRegister::W13 };
-pub const X14_FULL: Arm64Register = Arm64Register { x: XRegister::X14, w: WRegister::W14 };
-pub const X15_FULL: Arm64Register = Arm64Register { x: XRegister::X15, w: WRegister::W15 };
-pub const X16_FULL: Arm64Register = Arm64Register { x: XRegister::X16, w: WRegister::W16 };
-pub const X17_FULL: Arm64Register = Arm64Register { x: XRegister::X17, w: WRegister::W17 };
-pub const X18_FULL: Arm64Register = Arm64Register { x: XRegister::X18, w: WRegister::W18 };
-pub const X19_FULL: Arm64Register = Arm64Register { x: XRegister::X19, w: WRegister::W19 };
-pub const X20_FULL: Arm64Register = Arm64Register { x: XRegister::X20, w: WRegister::W20 };
-pub const X21_FULL: Arm64Register = Arm64Register { x: XRegister::X21, w: WRegister::W21 };
-pub const X22_FULL: Arm64Register = Arm64Register { x: XRegister::X22, w: WRegister::W22 };
-pub const X23_FULL: Arm64Register = Arm64Register { x: XRegister::X23, w: WRegister::W23 };
-pub const X24_FULL: Arm64Register = Arm64Register { x: XRegister::X24, w: WRegister::W24 };
-pub const X25_FULL: Arm64Register = Arm64Register { x: XRegister::X25, w: WRegister::W25 };
-pub const X26_FULL: Arm64Register = Arm64Register { x: XRegister::X26, w: WRegister::W26 };
-pub const X27_FULL: Arm64Register = Arm64Register { x: XRegister::X27, w: WRegister::W27 };
-pub const X28_FULL: Arm64Register = Arm64Register { x: XRegister::X28, w: WRegister::W28 };
-pub const X29_FULL: Arm64Register = Arm64Register { x: XRegister::X29, w: WRegister::W29 }; // Frame pointer
-pub const X30_FULL: Arm64Register = Arm64Register { x: XRegister::X30, w: WRegister::W30 }; // Link register
+pub const X0_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X0,
+    w: WRegister::W0,
+};
+pub const X1_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X1,
+    w: WRegister::W1,
+};
+pub const X2_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X2,
+    w: WRegister::W2,
+};
+pub const X3_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X3,
+    w: WRegister::W3,
+};
+pub const X4_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X4,
+    w: WRegister::W4,
+};
+pub const X5_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X5,
+    w: WRegister::W5,
+};
+pub const X6_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X6,
+    w: WRegister::W6,
+};
+pub const X7_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X7,
+    w: WRegister::W7,
+};
+pub const X8_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X8,
+    w: WRegister::W8,
+};
+pub const X9_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X9,
+    w: WRegister::W9,
+};
+pub const X10_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X10,
+    w: WRegister::W10,
+};
+pub const X11_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X11,
+    w: WRegister::W11,
+};
+pub const X12_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X12,
+    w: WRegister::W12,
+};
+pub const X13_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X13,
+    w: WRegister::W13,
+};
+pub const X14_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X14,
+    w: WRegister::W14,
+};
+pub const X15_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X15,
+    w: WRegister::W15,
+};
+pub const X16_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X16,
+    w: WRegister::W16,
+};
+pub const X17_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X17,
+    w: WRegister::W17,
+};
+pub const X18_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X18,
+    w: WRegister::W18,
+};
+pub const X19_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X19,
+    w: WRegister::W19,
+};
+pub const X20_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X20,
+    w: WRegister::W20,
+};
+pub const X21_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X21,
+    w: WRegister::W21,
+};
+pub const X22_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X22,
+    w: WRegister::W22,
+};
+pub const X23_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X23,
+    w: WRegister::W23,
+};
+pub const X24_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X24,
+    w: WRegister::W24,
+};
+pub const X25_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X25,
+    w: WRegister::W25,
+};
+pub const X26_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X26,
+    w: WRegister::W26,
+};
+pub const X27_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X27,
+    w: WRegister::W27,
+};
+pub const X28_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X28,
+    w: WRegister::W28,
+};
+pub const X29_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X29,
+    w: WRegister::W29,
+}; // Frame pointer
+pub const X30_FULL: Arm64Register = Arm64Register {
+    x: XRegister::X30,
+    w: WRegister::W30,
+}; // Link register
 
 pub const GENERAL_PURPOSE_REGISTERS: &[Arm64Register] = &[
-    X0_FULL, X1_FULL, X2_FULL, X3_FULL, X4_FULL, X5_FULL, X6_FULL, X7_FULL,
-    X8_FULL, X9_FULL, X10_FULL, X11_FULL, X12_FULL, X13_FULL, X14_FULL, X15_FULL,
-    X16_FULL, X17_FULL, X18_FULL, X19_FULL, X20_FULL, X21_FULL, X22_FULL, X23_FULL,
-    X24_FULL, X25_FULL, X26_FULL, X27_FULL, X28_FULL, X29_FULL, X30_FULL,
+    X0_FULL, X1_FULL, X2_FULL, X3_FULL, X4_FULL, X5_FULL, X6_FULL, X7_FULL, X8_FULL, X9_FULL,
+    X10_FULL, X11_FULL, X12_FULL, X13_FULL, X14_FULL, X15_FULL, X16_FULL, X17_FULL, X18_FULL,
+    X19_FULL, X20_FULL, X21_FULL, X22_FULL, X23_FULL, X24_FULL, X25_FULL, X26_FULL, X27_FULL,
+    X28_FULL, X29_FULL, X30_FULL,
 ];
 
 pub const CALLER_SAVED_REGISTERS: &[Arm64Register] = &[
-    X0_FULL, X1_FULL, X2_FULL, X3_FULL, X4_FULL, X5_FULL, X6_FULL, X7_FULL,
-    X8_FULL, X9_FULL, X10_FULL, X11_FULL, X12_FULL, X13_FULL, X14_FULL, X15_FULL,
-    X16_FULL, X17_FULL,
+    X0_FULL, X1_FULL, X2_FULL, X3_FULL, X4_FULL, X5_FULL, X6_FULL, X7_FULL, X8_FULL, X9_FULL,
+    X10_FULL, X11_FULL, X12_FULL, X13_FULL, X14_FULL, X15_FULL, X16_FULL, X17_FULL,
 ];
 
 pub const CALLEE_SAVED_REGISTERS: &[Arm64Register] = &[
-    X19_FULL, X20_FULL, X21_FULL, X22_FULL, X23_FULL, X24_FULL, X25_FULL,
-    X26_FULL, X27_FULL, X28_FULL, X29_FULL, X30_FULL,
+    X19_FULL, X20_FULL, X21_FULL, X22_FULL, X23_FULL, X24_FULL, X25_FULL, X26_FULL, X27_FULL,
+    X28_FULL, X29_FULL, X30_FULL,
 ];
 
 pub fn get_random_general_purpose_register<T: Rng + ?Sized>(rng: &mut T) -> &'static Arm64Register {
     GENERAL_PURPOSE_REGISTERS.choose(rng).unwrap()
 }
 
-pub fn get_safe_random_general_purpose_register<T: Rng + ?Sized>(excludes: &[Arm64Register], rng: &mut T) -> &'static Arm64Register {
+pub fn get_safe_random_general_purpose_register<T: Rng + ?Sized>(
+    excludes: &[Arm64Register],
+    rng: &mut T,
+) -> &'static Arm64Register {
     let filtered: Vec<_> = GENERAL_PURPOSE_REGISTERS
         .iter()
         .filter(|reg| !excludes.contains(reg))
@@ -175,9 +270,6 @@ impl Arm64Register {
     }*/
 
     pub fn is_special_purpose(&self) -> bool {
-        matches!(self.x,
-            XRegister::X29 |
-            XRegister::X30
-        )
+        matches!(self.x, XRegister::X29 | XRegister::X30)
     }
 }

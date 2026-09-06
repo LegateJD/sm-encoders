@@ -15,7 +15,8 @@
  */
 
 use crate::{
-    core::encoder::Encoder, sgn::encoder::{SgnEncoderX64ChaCha, SgnEncoderX64ThreadRng},
+    core::encoder::Encoder,
+    sgn::encoder::{SgnEncoderX64ChaCha, SgnEncoderX64ThreadRng},
 };
 
 #[repr(C)]
@@ -46,10 +47,7 @@ pub unsafe extern "C" fn sgn_encoder_x64_chacha_new(
         let badchars: std::collections::HashSet<u8> = badchars_slice.iter().copied().collect();
         encoder_builder = encoder_builder.set_badchars(badchars);
     }
-    let encoder = Box::new(
-        encoder_builder
-            .build_with_rng_seed(seed as u64),
-    );
+    let encoder = Box::new(encoder_builder.build_with_rng_seed(seed as u64));
     Box::into_raw(encoder)
 }
 
@@ -133,16 +131,13 @@ pub unsafe extern "C" fn sgn_encoder_x64_thread_new(
         .set_encoding_count(encoding_count)
         .set_save_registers(save_registers);
 
-    if  !badchars.is_null() && badchars_len > 0 {
+    if !badchars.is_null() && badchars_len > 0 {
         let badchars_slice = unsafe { std::slice::from_raw_parts(badchars, badchars_len) };
         let badchars: std::collections::HashSet<u8> = badchars_slice.iter().copied().collect();
         encoder_builder = encoder_builder.set_badchars(badchars);
     }
 
-    let encoder = Box::new(
-        encoder_builder
-            .build(),
-    );
+    let encoder = Box::new(encoder_builder.build());
     Box::into_raw(encoder)
 }
 

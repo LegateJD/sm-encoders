@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-pub mod encoder;
-pub mod x64;
-pub mod x32;
 pub mod aarch64;
 pub mod c_bindings;
+pub mod encoder;
 #[cfg(feature = "python")]
 pub mod py_bindings;
+pub mod x32;
+pub mod x64;
