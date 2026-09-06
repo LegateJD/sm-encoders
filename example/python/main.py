@@ -1,4 +1,4 @@
-from sm_encoders import SgnEncoderX64, XorDynamicEncoderX64
+from sm_encoders import SgnEncoderX64
 
 enc = SgnEncoderX64(seed=1234, rng="chacha")
 

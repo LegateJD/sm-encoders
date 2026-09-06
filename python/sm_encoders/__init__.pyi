@@ -2,7 +2,9 @@
 
 from typing import Literal
 
-RngAlgorithm = Literal["chacha", "thread"]
+from typing_extensions import TypeAlias
+
+RngAlgorithm: TypeAlias = Literal["chacha", "thread"]
 
 class SgnEncoderX64:
     """SGN (Shikata Ga Nai) Encoder for x64 architecture"""
