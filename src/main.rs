@@ -102,7 +102,7 @@ pub enum RngAlgorithm {
 
 fn main() {
     match encode() {
-        Ok(_) => println!("Written payload succesfully"),
+        Ok(_) => println!("Written payload successfully"),
         Err(error) => println!("Main error: {}", error),
     }
 }
