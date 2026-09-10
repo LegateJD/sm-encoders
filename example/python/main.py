@@ -4,6 +4,7 @@ from ranis import SgnEncoderX64, XorDynamicEncoderX64
 # ret
 SHELLCODE = b"\xb8\x42\x00\x00\x00\xc3"
 
+
 def show(name: str, original: bytes, encoded: bytes) -> None:
     print(f"--- {name} ---")
     print(f"Input  ({len(original)} bytes): {original.hex()}")
@@ -13,11 +14,7 @@ def show(name: str, original: bytes, encoded: bytes) -> None:
 
 # Shikata Ga Nai: seeded ChaCha RNG gives fully deterministic output, so
 # re-running with the same seed always produces the same encoded payload.
-sgn = SgnEncoderX64(
-    seed=1234,
-    rng="chacha",
-    encoding_count=2
-)
+sgn = SgnEncoderX64(seed=1234, rng="chacha", encoding_count=2)
 sgn_payload = sgn.encode(SHELLCODE)
 show("SGN (chacha, deterministic)", SHELLCODE, sgn_payload)
 
