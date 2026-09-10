@@ -1,5 +1,5 @@
 [package]
-name = "sm-encoders"
+name = "ranis"
 version = "0.1.0"
 edition = "2021"
 
@@ -19,5 +19,5 @@ default = []
 python = ["pyo3"]
 
 [lib]
-name = "_sm_encoders"
+name = "_ranis"
 crate-type = ["cdylib", "staticlib", "rlib"]

@@ -22,26 +22,26 @@ add_executable(encoder_example_project
 target_include_directories(encoder_example_project
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/sm_encoders/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/ranis/include
 )
 
-# 5. Pre-compiled Library Linking (sm_encoders)
-# Find the static library in vendor/sm_encoders/lib
-# MinGW builds name it "lib_sm_encoders.*"; MSVC builds drop the "lib" prefix
-# and name it "_sm_encoders.*". Allow an empty prefix too (find_library always
+# 5. Pre-compiled Library Linking (ranis)
+# Find the static library in vendor/ranis/lib
+# MinGW builds name it "lib_ranis.*"; MSVC builds drop the "lib" prefix
+# and name it "_ranis.*". Allow an empty prefix too (find_library always
 # prepends CMAKE_FIND_LIBRARY_PREFIXES to NAMES, which defaults to "lib" only
 # and would otherwise miss the MSVC-named file).
 set(CMAKE_FIND_LIBRARY_PREFIXES "" "lib")
-find_library(SM_ENCODERS_PATH
-    NAMES lib_sm_encoders _sm_encoders
-    PATHS ${CMAKE_CURRENT_SOURCE_DIR}/vendor/sm_encoders/lib
+find_library(RANIS_PATH
+    NAMES lib_ranis _ranis
+    PATHS ${CMAKE_CURRENT_SOURCE_DIR}/vendor/ranis/lib
     NO_DEFAULT_PATH
 )
 
-if(SM_ENCODERS_PATH)
-    target_link_libraries(encoder_example_project PRIVATE ${SM_ENCODERS_PATH})
+if(RANIS_PATH)
+    target_link_libraries(encoder_example_project PRIVATE ${RANIS_PATH})
 else()
-    message(FATAL_ERROR "Could not find sm_encoders static library in vendor/sm_encoders/lib")
+    message(FATAL_ERROR "Could not find ranis static library in vendor/ranis/lib")
 endif()
 
 # Rust's static std lib pulls in these system libraries on Windows.

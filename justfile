@@ -3,15 +3,15 @@
 default:
     @just --list
 
-# Build the sm-encoders crate (debug).
+# Build the ranis crate (debug).
 build:
     cargo build
 
-# Build the sm-encoders crate (release).
+# Build the ranis crate (release).
 build-release:
     cargo build --release
 
-# Build sm-encoders and vendor the library/headers into example/c_lang/vendor/sm_encoders (debug).
+# Build ranis and vendor the library/headers into example/c_lang/vendor/ranis (debug).
 [unix]
 vendor-c-example:
     ./scripts/vendor-c-example.sh
@@ -20,7 +20,7 @@ vendor-c-example:
 vendor-c-example:
     powershell -ExecutionPolicy Bypass -File scripts/vendor-c-example.ps1
 
-# Build sm-encoders and vendor the library/headers into example/c_lang/vendor/sm_encoders (release).
+# Build ranis and vendor the library/headers into example/c_lang/vendor/ranis (release).
 [unix]
 vendor-c-example-release:
     ./scripts/vendor-c-example.sh --release

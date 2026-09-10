@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
-#include "sgn_encoder.h"
+#include "ranis.h"
 #include <stddef.h>
 
 // mov    eax,0x42
@@ -10,17 +10,17 @@ unsigned char shellcode[] = {
 };
 
 int main() {
-    SgnEncoderX64ChaCha* encoder = sgn_encoder_x64_chacha_new(54, false, 1, false, NULL, 0);
+    ranis_sgn_encoder_x64_chacha_t* encoder = ranis_sgn_encoder_x64_chacha_new(54, false, 1, false, NULL, 0);
 
     if (encoder == NULL) {
         fprintf(stderr, "Failed to create encoder\n");
         return 1;
     }
 
-    CByteArray out = { .data = NULL, .len = 0, .capacity = 0 };
+    ranis_buffer_t out = { .data = NULL, .len = 0, .capacity = 0 };
     printf("Encoding!\n");
-    int32_t result = sgn_encoder_x64_chacha_encode(encoder, shellcode, sizeof(shellcode), &out);
-    sgn_encoder_x64_chacha_free(encoder);
+    int32_t result = ranis_sgn_encoder_x64_chacha_encode(encoder, shellcode, sizeof(shellcode), &out);
+    ranis_sgn_encoder_x64_chacha_free(encoder);
 
     if (result != 0) {
         fprintf(stderr, "Failed to encode payload\n");
@@ -33,7 +33,7 @@ int main() {
         printf("0x%02x%s", out.data[i], (i + 1 < out.len) ? ", " : "\n");
     }
 
-    sgn_free_byte_array(&out);
+    ranis_free_buffer(&out);
 
     return 0;
 }

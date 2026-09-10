@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
-Builds the sm-encoders Rust crate and vendors the resulting C library
-and headers into example/c_lang/vendor/sm_encoders, so the CMake example
+Builds the ranis Rust crate and vendors the resulting C library
+and headers into example/c_lang/vendor/ranis, so the CMake example
 can find them.
 
 .PARAMETER Release
@@ -20,7 +20,7 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $profile = if ($Release) { "release" } else { "debug" }
 
-$vendorDir = Join-Path $repoRoot "example/c_lang/vendor/sm_encoders"
+$vendorDir = Join-Path $repoRoot "example/c_lang/vendor/ranis"
 $libDir = Join-Path $vendorDir "lib"
 $includeDir = Join-Path $vendorDir "include"
 
@@ -42,20 +42,24 @@ New-Item -ItemType Directory -Force -Path $libDir, $includeDir | Out-Null
 
 $targetDir = Join-Path $repoRoot "target/$profile"
 
-# MSVC builds produce "_sm_encoders.*" (no "lib" prefix), MinGW builds
-# produce "lib_sm_encoders.*". Match both, but skip the DLL import library
+# MSVC builds produce "_ranis.*" (no "lib" prefix), MinGW builds
+# produce "lib_ranis.*". Match both, but skip the DLL import library
 # ("*.dll.lib") and dep-info files, neither of which the example needs.
 $libs = Get-ChildItem -Path $targetDir -File |
     Where-Object {
-        $_.Name -match '^(lib)?_sm_encoders\.(a|lib|dll)$'
+        $_.Name -match '^(lib)?_ranis\.(a|lib|dll)$'
     }
 
 if (-not $libs) {
-    Write-Error "No sm_encoders build artifacts found in $targetDir"
+    Write-Error "No ranis build artifacts found in $targetDir"
     exit 1
 }
 
 Copy-Item -Path $libs.FullName -Destination $libDir -Force
-Copy-Item -Path (Join-Path $repoRoot "include/*.h") -Destination $includeDir -Force
+if (Test-Path $includeDir) {
+    Remove-Item -Path $includeDir -Recurse -Force
+}
+New-Item -ItemType Directory -Force -Path $includeDir | Out-Null
+Copy-Item -Path (Join-Path $repoRoot "include/*") -Destination $includeDir -Recurse -Force
 
-Write-Host "Vendored sm-encoders ($profile) into $vendorDir"
+Write-Host "Vendored ranis ($profile) into $vendorDir"

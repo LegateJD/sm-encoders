@@ -3,7 +3,7 @@ requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "sm-encoders"
+name = "ranis"
 version = "0.1.0"
 description = "Shikata Ga Nai and other encoders for shellcode obfuscation"
 requires-python = ">=3.7"
@@ -16,5 +16,5 @@ classifiers = [
 [tool.maturin]
 features = ["python"]
 python-source = "python"
-module-name = "sm_encoders._sm_encoders"
-include = ["python/sm_encoders/__init__.pyi", "python/sm_encoders/py.typed"]
+module-name = "ranis._ranis"
+include = ["python/ranis/__init__.pyi", "python/ranis/py.typed"]

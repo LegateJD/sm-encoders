@@ -16,14 +16,14 @@
 
 use crate::{
     core::encoder::Encoder,
-    sgn::c_bindings::CByteArray,
+    sgn::c_bindings::Buffer,
     xor_dynamic::encoder::{XorDynamicEncoderX64ChaCha, XorDynamicEncoderX64Thread},
 };
 
 /// # Safety
 /// `badchars` must be either null or valid for reads of `badchars_len` bytes.
 #[no_mangle]
-pub unsafe extern "C" fn xor_dynamic_encoder_x64_chacha_new(
+pub unsafe extern "C" fn ranis_xor_dynamic_encoder_x64_chacha_new(
     seed: u64,
     plain_decoder: bool,
     encoding_count: u32,
@@ -47,9 +47,9 @@ pub unsafe extern "C" fn xor_dynamic_encoder_x64_chacha_new(
 }
 
 /// # Safety
-/// `encoder` must be a pointer previously returned by `xor_dynamic_encoder_x64_chacha_new`, or null.
+/// `encoder` must be a pointer previously returned by `ranis_xor_dynamic_encoder_x64_chacha_new`, or null.
 #[no_mangle]
-pub unsafe extern "C" fn xor_dynamic_encoder_x64_chacha_free(
+pub unsafe extern "C" fn ranis_xor_dynamic_encoder_x64_chacha_free(
     encoder: *mut XorDynamicEncoderX64ChaCha,
 ) {
     if !encoder.is_null() {
@@ -60,14 +60,14 @@ pub unsafe extern "C" fn xor_dynamic_encoder_x64_chacha_free(
 }
 
 /// # Safety
-/// `encoder` must be a valid pointer from `xor_dynamic_encoder_x64_chacha_new`, `payload` must be
+/// `encoder` must be a valid pointer from `ranis_xor_dynamic_encoder_x64_chacha_new`, `payload` must be
 /// valid for reads of `payload_len` bytes, and `out` must be a valid pointer to a `CByteArray`.
 #[no_mangle]
-pub unsafe extern "C" fn xor_dynamic_encoder_x64_chacha_encode(
+pub unsafe extern "C" fn ranis_xor_dynamic_encoder_x64_chacha_encode(
     encoder: *mut XorDynamicEncoderX64ChaCha,
     payload: *const u8,
     payload_len: usize,
-    out: *mut CByteArray,
+    out: *mut Buffer,
 ) -> i32 {
     if encoder.is_null() || payload.is_null() || out.is_null() {
         return -1;
@@ -97,7 +97,7 @@ pub unsafe extern "C" fn xor_dynamic_encoder_x64_chacha_encode(
 /// # Safety
 /// `badchars` must be either null or valid for reads of `badchars_len` bytes.
 #[no_mangle]
-pub unsafe extern "C" fn xor_dynamic_encoder_x64_thread_new(
+pub unsafe extern "C" fn ranis_xor_dynamic_encoder_x64_thread_new(
     plain_decoder: bool,
     encoding_count: u32,
     save_registers: bool,
@@ -120,9 +120,9 @@ pub unsafe extern "C" fn xor_dynamic_encoder_x64_thread_new(
 }
 
 /// # Safety
-/// `encoder` must be a pointer previously returned by `xor_dynamic_encoder_x64_thread_new`, or null.
+/// `encoder` must be a pointer previously returned by `ranis_xor_dynamic_encoder_x64_thread_new`, or null.
 #[no_mangle]
-pub unsafe extern "C" fn xor_dynamic_encoder_x64_thread_free(
+pub unsafe extern "C" fn ranis_xor_dynamic_encoder_x64_thread_free(
     encoder: *mut XorDynamicEncoderX64Thread,
 ) {
     if !encoder.is_null() {
@@ -133,14 +133,14 @@ pub unsafe extern "C" fn xor_dynamic_encoder_x64_thread_free(
 }
 
 /// # Safety
-/// `encoder` must be a valid pointer from `xor_dynamic_encoder_x64_thread_new`, `payload` must be
+/// `encoder` must be a valid pointer from `ranis_xor_dynamic_encoder_x64_thread_new`, `payload` must be
 /// valid for reads of `payload_len` bytes, and `out` must be a valid pointer to a `CByteArray`.
 #[no_mangle]
-pub unsafe extern "C" fn xor_dynamic_encoder_x64_thread_encode(
+pub unsafe extern "C" fn ranis_xor_dynamic_encoder_x64_thread_encode(
     encoder: *mut XorDynamicEncoderX64Thread,
     payload: *const u8,
     payload_len: usize,
-    out: *mut CByteArray,
+    out: *mut Buffer,
 ) -> i32 {
     if encoder.is_null() || payload.is_null() || out.is_null() {
         return -1;

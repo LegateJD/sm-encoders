@@ -1,4 +1,4 @@
-# SM Encoders
+# Ranis
 
 This repository provides a collection of custom encoders designed for **offensive security operations** and **penetration testing**.
 
@@ -20,7 +20,7 @@ This repository provides a collection of custom encoders designed for **offensiv
 Try `-h` for more information:
 
 ```bash
-Usage: sm-encoders [OPTIONS] --input <INPUT> --output <OUTPUT>
+Usage: ranis [OPTIONS] --input <INPUT> --output <OUTPUT>
 
 Options:
   -i, --input <INPUT>                Input binary path

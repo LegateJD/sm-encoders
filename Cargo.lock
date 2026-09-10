@@ -387,6 +387,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "63b8176103e19a2643978565ca18b50549f6101881c443590420e4dc998a3c69"
 
 [[package]]
+name = "ranis"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "byteorder",
+ "clap",
+ "dynasmrt",
+ "pyo3",
+ "rand",
+ "serde",
+ "serde_yaml",
+ "thiserror",
+]
+
+[[package]]
 name = "ryu"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -433,21 +448,6 @@ dependencies = [
  "ryu",
  "serde",
  "unsafe-libyaml",
-]
-
-[[package]]
-name = "sm-encoders"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "byteorder",
- "clap",
- "dynasmrt",
- "pyo3",
- "rand",
- "serde",
- "serde_yaml",
- "thiserror",
 ]
 
 [[package]]

@@ -1,4 +1,4 @@
-"""Type stubs for sm_encoders"""
+"""Type stubs for ranis"""
 
 from typing import Literal
 
