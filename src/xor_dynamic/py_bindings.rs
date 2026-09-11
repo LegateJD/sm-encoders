@@ -16,82 +16,45 @@
 
 use std::collections::HashSet;
 
-use pyo3::exceptions::{PyRuntimeError, PyValueError};
+use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 
 use crate::core::encoder::Encoder;
 use crate::xor_dynamic::encoder::{
-    XorDynamicEncoderError, XorDynamicEncoderX64ChaCha, XorDynamicEncoderX64Thread,
+    XorDynamicEncoderX64ChaCha as CoreXorDynamicEncoderX64ChaCha,
+    XorDynamicEncoderX64Thread as CoreXorDynamicEncoderX64Thread,
 };
 
-enum XorDynamicEncoderX64Inner {
-    ChaCha(Box<XorDynamicEncoderX64ChaCha>),
-    Thread(XorDynamicEncoderX64Thread),
-}
-
-impl XorDynamicEncoderX64Inner {
-    fn encode(&mut self, payload: &[u8]) -> Result<Vec<u8>, XorDynamicEncoderError> {
-        match self {
-            XorDynamicEncoderX64Inner::ChaCha(encoder) => encoder.encode(payload),
-            XorDynamicEncoderX64Inner::Thread(encoder) => encoder.encode(payload),
-        }
-    }
-}
-
 #[pyclass(unsendable)]
-pub struct XorDynamicEncoderX64 {
-    encoder: XorDynamicEncoderX64Inner,
+pub struct XorDynamicEncoderX64ThreadRng {
+    encoder: CoreXorDynamicEncoderX64Thread,
 }
 
 #[pymethods]
-impl XorDynamicEncoderX64 {
-    /// `rng` selects the assembler's RNG source: "chacha" (seeded, deterministic)
-    /// or "thread" (OS RNG, ignores `seed`).
+impl XorDynamicEncoderX64ThreadRng {
     #[new]
     #[pyo3(signature = (
-        seed=0,
         plain_decoder=false,
         encoding_count=1,
         save_registers=false,
         badchars=vec![],
-        rng="thread"
     ))]
     fn new(
-        seed: u64,
         plain_decoder: bool,
         encoding_count: u32,
         save_registers: bool,
         badchars: Vec<u8>,
-        rng: &str,
-    ) -> PyResult<Self> {
+    ) -> Self {
         let badchars: HashSet<u8> = badchars.into_iter().collect();
 
-        let encoder = match rng {
-            "chacha" => XorDynamicEncoderX64Inner::ChaCha(Box::new(
-                XorDynamicEncoderX64ChaCha::builder()
-                    .set_plain_decoder(plain_decoder)
-                    .set_encoding_count(encoding_count)
-                    .set_save_registers(save_registers)
-                    .set_badchars(badchars)
-                    .build_with_rng_seed(seed),
-            )),
-            "thread" => XorDynamicEncoderX64Inner::Thread(
-                XorDynamicEncoderX64Thread::builder()
-                    .set_plain_decoder(plain_decoder)
-                    .set_encoding_count(encoding_count)
-                    .set_save_registers(save_registers)
-                    .set_badchars(badchars)
-                    .build(),
-            ),
-            other => {
-                return Err(PyValueError::new_err(format!(
-                    "Invalid rng '{}': expected 'chacha' or 'thread'",
-                    other
-                )))
-            }
-        };
-
-        Ok(Self { encoder })
+        Self {
+            encoder: CoreXorDynamicEncoderX64Thread::builder()
+                .set_plain_decoder(plain_decoder)
+                .set_encoding_count(encoding_count)
+                .set_save_registers(save_registers)
+                .set_badchars(badchars)
+                .build(),
+        }
     }
 
     fn encode(&mut self, payload: Vec<u8>) -> PyResult<Vec<u8>> {
@@ -101,6 +64,53 @@ impl XorDynamicEncoderX64 {
     }
 
     fn __repr__(&self) -> String {
-        "XorDynamicEncoderX64()".to_string()
+        "XorDynamicEncoderX64ThreadRng()".to_string()
+    }
+}
+
+#[pyclass(unsendable)]
+pub struct XorDynamicEncoderX64ChaCha {
+    encoder: Box<CoreXorDynamicEncoderX64ChaCha>,
+}
+
+#[pymethods]
+impl XorDynamicEncoderX64ChaCha {
+    #[new]
+    #[pyo3(signature = (
+        seed=0,
+        plain_decoder=false,
+        encoding_count=1,
+        save_registers=false,
+        badchars=vec![],
+    ))]
+    fn new(
+        seed: u64,
+        plain_decoder: bool,
+        encoding_count: u32,
+        save_registers: bool,
+        badchars: Vec<u8>,
+    ) -> Self {
+        let badchars: HashSet<u8> = badchars.into_iter().collect();
+
+        Self {
+            encoder: Box::new(
+                CoreXorDynamicEncoderX64ChaCha::builder()
+                    .set_plain_decoder(plain_decoder)
+                    .set_encoding_count(encoding_count)
+                    .set_save_registers(save_registers)
+                    .set_badchars(badchars)
+                    .build_with_rng_seed(seed),
+            ),
+        }
+    }
+
+    fn encode(&mut self, payload: Vec<u8>) -> PyResult<Vec<u8>> {
+        self.encoder
+            .encode(&payload)
+            .map_err(|e| PyRuntimeError::new_err(format!("Encoding error: {}", e)))
+    }
+
+    fn __repr__(&self) -> String {
+        "XorDynamicEncoderX64ChaCha()".to_string()
     }
 }
