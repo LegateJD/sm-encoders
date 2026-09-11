@@ -1,1 +1,1 @@
-from ._ranis import *
+from .ranis import *

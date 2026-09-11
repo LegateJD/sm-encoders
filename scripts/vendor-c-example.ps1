@@ -42,12 +42,12 @@ New-Item -ItemType Directory -Force -Path $libDir, $includeDir | Out-Null
 
 $targetDir = Join-Path $repoRoot "target/$profile"
 
-# MSVC builds produce "_ranis.*" (no "lib" prefix), MinGW builds
-# produce "lib_ranis.*". Match both, but skip the DLL import library
+# MSVC builds produce "ranis.*" (no "lib" prefix), MinGW builds
+# produce "libranis.*". Match both, but skip the DLL import library
 # ("*.dll.lib") and dep-info files, neither of which the example needs.
 $libs = Get-ChildItem -Path $targetDir -File |
     Where-Object {
-        $_.Name -match '^(lib)?_ranis\.(a|lib|dll)$'
+        $_.Name -match '^(lib)?ranis\.(a|lib|dll)$'
     }
 
 if (-not $libs) {

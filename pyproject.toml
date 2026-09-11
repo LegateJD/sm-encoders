@@ -16,5 +16,5 @@ classifiers = [
 [tool.maturin]
 features = ["python"]
 python-source = "python"
-module-name = "ranis._ranis"
+module-name = "ranis.ranis"
 include = ["python/ranis/__init__.pyi", "python/ranis/py.typed"]

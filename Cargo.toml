@@ -19,5 +19,5 @@ default = []
 python = ["pyo3"]
 
 [lib]
-name = "_ranis"
+name = "ranis"
 crate-type = ["cdylib", "staticlib", "rlib"]

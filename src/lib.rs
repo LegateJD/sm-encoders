@@ -31,7 +31,7 @@ use pyo3::prelude::*;
 
 #[cfg(feature = "python")]
 #[pymodule]
-fn _ranis(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn ranis(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<sgn::py_bindings::SgnEncoderX64>()?;
     m.add_class::<xor_dynamic::py_bindings::XorDynamicEncoderX64>()?;
     Ok(())

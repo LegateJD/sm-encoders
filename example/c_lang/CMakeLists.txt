@@ -27,13 +27,13 @@ target_include_directories(encoder_example_project
 
 # 5. Pre-compiled Library Linking (ranis)
 # Find the static library in vendor/ranis/lib
-# MinGW builds name it "lib_ranis.*"; MSVC builds drop the "lib" prefix
-# and name it "_ranis.*". Allow an empty prefix too (find_library always
+# MinGW builds name it "libranis.*"; MSVC builds drop the "lib" prefix
+# and name it "ranis.*". Allow an empty prefix too (find_library always
 # prepends CMAKE_FIND_LIBRARY_PREFIXES to NAMES, which defaults to "lib" only
 # and would otherwise miss the MSVC-named file).
 set(CMAKE_FIND_LIBRARY_PREFIXES "" "lib")
 find_library(RANIS_PATH
-    NAMES lib_ranis _ranis
+    NAMES libranis ranis
     PATHS ${CMAKE_CURRENT_SOURCE_DIR}/vendor/ranis/lib
     NO_DEFAULT_PATH
 )

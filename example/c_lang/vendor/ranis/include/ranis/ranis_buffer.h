@@ -11,6 +11,6 @@ typedef struct {
 } ranis_buffer_t;
 
 // Free a byte array previously populated by one of the `*_encode` functions.
-void ranis_free_buffer(ranis_buffer_t* array);
+void ranis_free_buffer(ranis_buffer_t* buffer);
 
 #endif // RANIS_BUFFER_H
